@@ -1,0 +1,240 @@
+/* Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300&display=swap');
+
+:root {
+  --main-color: #FDD99F; 
+  --secondary-color: #D1D6FD; 
+  --border-color: #eeaeca;
+  --main-font: "Nunito";
+  --secondary-font: "Poppins";
+  --third-font: "Kalam";
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5; 
+    color: #333; 
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+label {
+    font-family: var(--main-font);
+    font-size: 18px;
+}
+
+/* Header */
+h2 {
+    color: #222; /* Darker gray for the header */
+    margin-top: 40px;
+    margin-bottom: 40px;
+    font-family: var(--main-font);
+    font-size: 36px;
+}
+
+
+/* Form Input */
+input[type="text"], input[type="password"], select {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 300px;
+    font-size: 17px;
+    font-family: var(--main-font)
+}
+
+/* Password Display */
+#password {
+    font-weight: bold;
+    color: green;
+    font-size: 24px;
+    margin-top: 10px;
+    font-family: var(--main-font);
+}
+
+/* User List Section */
+#userList {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    width: 350px;
+    height: 300px;
+    font-family: var(--main-font)
+}
+
+#userList ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+#userList li {
+    margin-bottom: 10px;
+}
+
+#userList button {
+    background-color: red;
+    margin-left: 10px;
+}
+
+#userList button:hover {
+    background-color: darkred;
+}
+
+/* Court Booking Form */
+h3 {
+    margin-top: 20px;
+    font-family: var(--main-font)
+}
+
+div {
+    margin-bottom: 10px;
+}
+
+/* Court Status Section */
+#courtStatus {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    width: 90%;
+    max-width: 1500px; 
+    text-align: left;
+    border: 1px solid #ccc;
+}
+
+/* Court Container */
+.court-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    gap: 20px; /* Adds space between court cards */
+}
+
+/* Court Cards */
+.court-card {
+    width: calc(17% - 10px);
+    padding: 15px;
+    text-align: center;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+}
+
+.court-card h3 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.court-card p {
+    margin: 5px 0;
+    font-family: var(--main-font)
+}
+
+.court-card .status {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Adjusting court layout for the second row (4 courts) */
+.court-card:nth-child(n+6) {
+    width: calc(17% - 10px);
+}
+
+.court-card.open {
+    background-color: #d4edda; /* Light green for Open */
+}
+
+.court-card.closed {
+    background-color: #f8d7da; /* Light red for Closed */
+}
+
+.court-card.open .status {
+    color: #28a745; /* Green for Open */
+}
+
+.court-card.closed .status {
+    color: #dc3545; /* Red for Closed */
+}
+
+button {
+    --color: black;
+    font-family: inherit;
+    display: inline-block;
+    width: 8em;
+    height: 2.6em;
+    margin: 20px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    border: 2px solid var(--color);
+    transition: color 0.5s;
+    z-index: 1;
+    font-size: 17px;
+    border-radius: 6px;
+    font-weight: 500;
+    color: var(--color);
+    font-family: var(--main-font)
+  }
+  
+  /* button:before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    background: var(--color);
+    height: 150px;
+    width: 200px;
+    border-radius: 50%;
+  }
+  
+  button:hover {
+    color: #fff;
+  }
+  
+  button:before {
+    top: 100%;
+    left: 100%;
+    transition: all 0.7s;
+  }
+  
+  button:hover:before {
+    top: -30px;
+    left: -30px;
+  }
+  
+  button:active:before {
+    background: black;
+    transition: background 0s;
+  } */
+  
+
+/* Responsive Layout */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    #courtStatus, #userList {
+        width: 100%;
+    }
+
+    .court-card {
+        width: calc(50% - 10px); /* Two courts per row on smaller screens */
+    }
+
+    .court-card:nth-child(n+6) {
+        width: calc(50% - 10px); /* Adjust second row as well */
+    }
+
+    input[type="text"], input[type="password"], select {
+        width: 100%;
+    }
+}
