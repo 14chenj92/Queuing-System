@@ -17,6 +17,9 @@
         const words = ["red", "blue", "green", "pink", "dog", "cat", "fox"];
         const password = words[Math.floor(Math.random() * words.length)];
         const username = document.getElementById("username").value;
+        const firstName = document.getElementById("firstName").value;
+        const lastName = document.getElementById("lastName").value;
+        const email = document.getElementById("email").value;
 
         if (!username) {
           Swal.fire({
@@ -29,20 +32,26 @@
         fetch("/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, password, firstName, lastName, email }),
         })
-          .then((response) => response.json())
-          .then((data) => {
-            const passwordDisplay = document.getElementById("password");
-            if (data.message) {
-              passwordDisplay.textContent = "Generated Password: " + password;
-              passwordDisplay.style.color = "green";
-              passwordDisplay.style.fontSize = "24px";
-            } else {
-              passwordDisplay.textContent =
-                "Username already exists. Please choose another username.";
-              passwordDisplay.style.color = "red";
+        .then((response) => response.json())
+    .then((data) => {
+        const passwordDisplay = document.getElementById("password");
+        if (data.message) {
+            if (data.message === "User registered successfully") {
+                passwordDisplay.textContent = "Generated Password: " + password;
+                passwordDisplay.style.color = "green";
+                passwordDisplay.style.fontSize = "24px";
+            } else if (data.message === "Username already exists") {
+                passwordDisplay.textContent =
+                    "Username already exists. Please choose another username.";
+                passwordDisplay.style.color = "red";
+            } else if (data.message === "Email already exists") {
+                passwordDisplay.textContent =
+                    "Email already exists. Please choose another email.";
+                passwordDisplay.style.color = "red";
             }
+        }
           })
           .catch((err) => console.error("Error:", err));
       }
@@ -62,40 +71,62 @@
           })
           .catch((err) => console.error("Error fetching users:", err));
       }
+      function showUsers() {
+  fetch("/users")
+    .then((response) => response.json())
+    .then((data) => {
+      users = {}; // Clear previous data
+      let userList = "<h3>Stored Usernames and Passwords</h3><ul>";
+      data.forEach((user) => {
+        users[user.username] = user.password; // Store data in the `users` object
 
-      function resetPassword(username) {
-        const words = [
-          "red",
-          "blue",
-          "green",
-          "pink",
-          "dog",
-          "cat",
-          "fox",
-          "rose",
-          "lily",
-          "tulip",
-          "bat",
-          "owl",
-          "violet",
-          "daisy",
-          "beet",
-          "bear",
-          "hawk",
-          "plum",
-        ];
+        userList += `
+          <li>
+            ${user.username}: ${user.password} 
+            <button onclick="editUser('${user.username}')">Edit</button>
+            <button onclick="deleteUser('${user.username}')">Delete</button>
+          </li>
+        `;
+      });
+      userList += "</ul>";
+      document.getElementById("userList").innerHTML = userList;
+    })
+    .catch((err) => console.error("Error fetching users:", err));
+}
 
-        if (users[username]) {
-          const newPassword = words[Math.floor(Math.random() * words.length)];
-          users[username] = newPassword;
+function editUser(username) {
+  let newPassword = prompt(`Enter new password for ${username}:`);
+  if (newPassword) {
+    fetch(`/users/${username}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: newPassword }),
+    })
+      .then((response) => response.json())
+      .then(() => {
+        alert(`Password updated for ${username}`);
+        showUsers(); // Refresh the list
+      })
+      .catch((err) => console.error("Error updating user:", err));
+  }
+}
 
-          alert(`Password for ${username} has been reset to: ${newPassword}`);
+function deleteUser(username) {
+  if (confirm(`Are you sure you want to delete ${username}?`)) {
+    fetch(`/users/${username}`, {
+      method: "DELETE",
+    })
+      .then((response) => response.json())
+      .then(() => {
+        alert(`${username} deleted`);
+        showUsers(); // Refresh the list
+      })
+      .catch((err) => console.error("Error deleting user:", err));
+  }
+}
 
-          showUsers(); // Refresh the displayed list
-        } else {
-          alert(`User ${username} not found.`);
-        }
-      }
 
       function bookCourt() {
         const court = document.getElementById("courtSelection").value;
@@ -274,6 +305,9 @@
 <input type="text" id="lastName" name="lastName" required />
 
 <br /><br />
+
+<label for="email">Email:</label>
+<input type="text" id="email" name="email" required />
 
     <button onclick="generatePassword()">Submit</button>
     <br /><br />

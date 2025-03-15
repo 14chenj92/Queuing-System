@@ -28,9 +28,9 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(30) UNIQUE NOT NULL,
     password VARCHAR(30) NOT NULL,
-    first_name VARCHAR(30) NOT NULL,
-    last_name VARCHAR(30) NOT NULL,
-    membership ENUM('drop-in', 'annual') NOT NULL
+    firstName VARCHAR(30) NOT NULL,
+    lastName VARCHAR(30) NOT NULL,
+    email VARCHAR(60) NOT NULL UNIQUE
 )`;
 
 
@@ -42,13 +42,36 @@ db.query(createUsersTable, (err) => {
 
 // Routes
 app.post('/register', (req, res) => {
-    const { username, password } = req.body;
-    const sql = 'INSERT INTO users (username, password) VALUES (?, ?)';
-    db.query(sql, [username, password], (err, result) => {
+    const { username, password, firstName, lastName, email } = req.body;
+
+    // Check if username already exists
+    const checkUserQuery = 'SELECT * FROM users WHERE username = ? OR email = ?';
+    db.query(checkUserQuery, [username, email], (err, result) => {
         if (err) {
-            return res.status(400).json({ error: 'Username already exists or invalid data' });
+            console.log("Error checking duplicates:", err);
+            return res.status(500).json({ message: 'Error checking user data' });
         }
-        res.json({ message: 'User registered successfully' });
+
+        // If the result is not empty, it means username or email already exists
+        if (result.length > 0) {
+            const existingUser = result[0];
+            if (existingUser.username === username) {
+                return res.status(400).json({ message: 'Username already exists' });
+            }
+            if (existingUser.email === email) {
+                return res.status(400).json({ message: 'Email already exists' });
+            }
+        }
+
+        // If no duplicates, proceed with the insertion
+        const sql = 'INSERT INTO users (username, password, firstName, lastName, email) VALUES (?, ?, ?, ?, ?)';
+        db.query(sql, [username, password, firstName, lastName, email], (err, result) => {
+            if (err) {
+                console.log("Error inserting user:", err);
+                return res.status(500).json({ message: 'Error registering user' });
+            }
+            res.json({ message: 'User registered successfully' });
+        });
     });
 });
 
@@ -73,6 +96,33 @@ app.get('/users', (req, res) => {
             return res.status(500).json({ error: 'Failed to fetch users' });
         }
         res.json(results);
+    });
+});
+
+app.put('/users/:username', (req, res) => {
+    const { username } = req.params;
+    const { password } = req.body;
+
+    const sql = 'UPDATE users SET password = ? WHERE username = ?';
+    db.query(sql, [password, username], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Error updating password' });
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ message: 'Password updated successfully' });
+    });
+});
+
+// Delete User
+app.delete('/users/:username', (req, res) => {
+    const { username } = req.params;
+    const sql = 'DELETE FROM users WHERE username = ?';
+    db.query(sql, [username], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Error deleting user' });
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ message: 'User deleted successfully' });
     });
 });
 
