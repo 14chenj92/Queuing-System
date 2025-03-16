@@ -17,11 +17,10 @@ function sendMail(event) {
         .then(() => {
             alert("A verification code has been sent to your email!");
 
-            // ✅ Fix: Send both email & code to the backend
             fetch("/save-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email, code: verificationCode }) // ✅ Include email
+                body: JSON.stringify({ email: email, code: verificationCode })
             });
         })
         .catch((error) => {
@@ -35,12 +34,12 @@ function verifyCode(event) {
     event.preventDefault();
 
     let enteredCode = document.getElementById("code").value;
-    let email = document.getElementById("email").value; // Get email input
+    let email = document.getElementById("email").value; 
 
     fetch("/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, code: enteredCode }) // Include email
+        body: JSON.stringify({ email: email, code: enteredCode }) 
     })
     .then(response => response.text())
     .then(message => {

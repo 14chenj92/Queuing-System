@@ -150,7 +150,6 @@ app.post('/register', (req, res) => {
             return res.status(500).json({ message: 'Error checking user data' });
         }
 
-        // If the result is not empty, it means username or email already exists
         if (result.length > 0) {
             const existingUser = result[0];
             if (existingUser.username === username) {
@@ -197,49 +196,102 @@ app.get('/users', (req, res) => {
     });
 });
 
-
 app.put('/users/:username', (req, res) => {
     const { username } = req.params;
     const { password, firstName, lastName, email, approved } = req.body;
 
     // Ensure at least one field to update
-    if (!password && !firstName && !lastName && !email) {
+    if (!password && !firstName && !lastName && !email && approved === undefined) {
         return res.status(400).json({ error: 'No data provided to update' });
     }
 
-    // Dynamically build the SET clause based on provided fields
-    let updates = [];
-    let values = [];
+    // Query to check if the user is approved
+    const checkUserApprovalQuery = 'SELECT approved FROM users WHERE username = ?';
+    db.query(checkUserApprovalQuery, [username], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to check user approval status' });
+        }
 
-    if (password) {
-        updates.push('password = ?');
-        values.push(password);
-    }
-    if (firstName) {
-        updates.push('firstName = ?');
-        values.push(firstName);
-    }
-    if (lastName) {
-        updates.push('lastName = ?');
-        values.push(lastName);
-    }
-    if (email) {
-        updates.push('email = ?');
-        values.push(email);
-    }
-
-    // Combine the SQL query
-    const sql = `UPDATE users SET ${updates.join(', ')} WHERE username = ?`;
-    values.push(username);  // Add username as last parameter for WHERE clause
-
-    db.query(sql, values, (err, result) => {
-        if (err) return res.status(500).json({ error: 'Error updating user details' });
-        if (result.affectedRows === 0) {
+        if (result.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
-        res.json({ message: 'User details updated successfully' });
+
+        // If the user is not approved, prevent update
+        // if (result[0].approved !== 1) {
+        //     return res.status(403).json({ error: `User ${username} is not approved. Please verify your email first.` });
+        // }
+
+        // Dynamically build the SET clause based on provided fields
+        let updates = [];
+        let values = [];
+
+        if (password) {
+            updates.push('password = ?');
+            values.push(password);
+        }
+        if (firstName) {
+            updates.push('firstName = ?');
+            values.push(firstName);
+        }
+        if (lastName) {
+            updates.push('lastName = ?');
+            values.push(lastName);
+        }
+        if (email) {
+            updates.push('email = ?');
+            values.push(email);
+        }
+        if (approved !== undefined) {
+            updates.push('approved = ?');
+            values.push(approved);
+        }
+
+        // Ensure there are fields to update
+        const query = `UPDATE users SET ${updates.join(', ')} WHERE username = ?`;
+        values.push(username);
+
+        // Execute the update query
+        db.query(query, values, (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database error', details: err });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            res.json({ message: 'User updated successfully' });
+        });
     });
 });
+
+app.post('/users/validate', (req, res) => {
+    const { username, password } = req.body;
+
+    const sql = 'SELECT password, approved FROM users WHERE username = ?';
+    db.query(sql, [username], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = results[0];
+
+        if (user.password !== password) {
+            return res.status(401).json({ error: 'Incorrect password' });
+        }
+
+        if (user.approved !== 1) {
+            return res.status(403).json({ error: 'User not approved. Please verify your email.' });
+        }
+
+        res.json({ success: true });
+    });
+});
+
 
 
 // Delete User
@@ -264,7 +316,8 @@ let courts = {
     "Court 6": { timeLeft: 20, currentPlayers: [], queue: [] },
     "Court 7": { timeLeft: 20, currentPlayers: [], queue: [] },
     "Court 8": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 9": { timeLeft: 20, currentPlayers: [], queue: [] }
+    "Court 9": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Court 10": { timeLeft: 20, currentPlayers: [], queue: [] }
 };
 
 
@@ -273,11 +326,10 @@ function startCourtTimers() {
         Object.keys(courts).forEach(court => {
             const courtData = courts[court];
             if (courtData.currentPlayers.length > 0 && courtData.timeLeft > 0) {
-                courtData.timeLeft--; // Decrement the time left by 1 second
+                courtData.timeLeft--; 
             } else if (courtData.timeLeft === 0 && courtData.queue.length > 0) {
-                // Move the next group in the queue to the current players
                 courtData.currentPlayers = courtData.queue.shift();
-                courtData.timeLeft = 20; // Reset the timer for the next group
+                courtData.timeLeft = 20; // Reset the timer 
             }
         });
     }, 1000); 
@@ -296,17 +348,15 @@ app.post('/update-courts', (req, res) => {
 
 // Remove player from a court
 app.delete('/remove-player/:playerId', async (req, res) => {
-    const playerId = req.params.playerId;  // Extract playerId from the URL
+    const playerId = req.params.playerId;  
 
     try {
-        // Check if the player exists in the court_players table
         const [result] = await db.promise().query('SELECT * FROM court_players WHERE player_id = ?', [playerId]);
 
         if (result.length === 0) {
             return res.status(404).send('Player not found.');
         }
 
-        // If the player exists, remove them from the court
         await db.promise().query('DELETE FROM court_players WHERE player_id = ?', [playerId]);
 
         res.status(200).send('Player removed successfully!');

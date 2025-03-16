@@ -70,7 +70,7 @@ form {
     border-radius: 5px;
     background-color: #fff;
     width: 600px;
-    height: 600px;
+    height: 900px;
     font-family: var(--main-font)
 }
 
@@ -104,35 +104,40 @@ div {
 
 /* Court Status Section */
 #courtStatus {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 5px;
-    width: 90%;
-    max-width: 1500px; 
-    text-align: left;
-    border: 1px solid #ccc;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columns by default */
+    gap: 15px;
 }
 
-/* Court Container */
-.court-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-evenly;
-    gap: 20px; /* Adds space between court cards */
-}
-
-/* Court Cards */
 .court-card {
-    width: calc(17% - 10px);
-    padding: 15px;
+    padding: 10px;
+    border: 2px solid #000;
     text-align: center;
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
+    background-color: white;
+    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s ease;
 }
+
+/* Update grid layout to have 4 columns in the second row */
+#courtStatus:nth-child(2) {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (min-width: 768px) {
+    #courtStatus {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns for larger screens */
+    }
+}
+
+@media (min-width: 1200px) {
+    #courtStatus {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns on large screens */
+    }
+}
+
+
+
 
 .court-card h3 {
     font-size: 24px;
@@ -149,10 +154,6 @@ div {
     color: #333;
 }
 
-/* Adjusting court layout for the second row (4 courts) */
-.court-card:nth-child(n+6) {
-    width: calc(17% - 10px);
-}
 
 .court-card.open {
     background-color: #d4edda; /* Light green for Open */
@@ -221,25 +222,3 @@ button {
   } */
   
 
-/* Responsive Layout */
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-
-    #courtStatus, #userList {
-        width: 100%;
-    }
-
-    .court-card {
-        width: calc(50% - 10px); /* Two courts per row on smaller screens */
-    }
-
-    .court-card:nth-child(n+6) {
-        width: calc(50% - 10px); /* Adjust second row as well */
-    }
-
-    input[type="text"], input[type="password"], select {
-        width: 100%;
-    }
-}
