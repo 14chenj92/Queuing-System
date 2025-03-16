@@ -34,7 +34,7 @@ app.post("/save-code", (req, res) => {
     }
 
     req.session.verificationCode = code;
-    req.session.email = email; // ✅ Ensure email is saved in session
+    req.session.email = email; 
 
     console.log("Saved to session:", req.session.verificationCode, req.session.email);
     res.send("Verification code saved.");
@@ -116,11 +116,26 @@ CREATE TABLE IF NOT EXISTS users (
     approved BOOLEAN DEFAULT FALSE
 )`;
 
+const createCourtsTable = `
+CREATE TABLE IF NOT EXISTS court_players (
+    player_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    court_id INT,  -- Could be any identifier for the court
+    booking_time DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+`;
+
 
 
 db.query(createUsersTable, (err) => {
     if (err) throw err;
     console.log('Users table created');
+});
+
+db.query(createCourtsTable, (err) => {
+    if (err) throw err;
+    console.log('Court table created');
 });
 
 // Routes
@@ -279,17 +294,28 @@ app.post('/update-courts', (req, res) => {
     res.json({ message: 'Court data updated successfully.' });
 });
 
-app.delete('/remove-player/:id', async (req, res) => {
-    const playerId = req.params.id;
+// Remove player from a court
+app.delete('/remove-player/:playerId', async (req, res) => {
+    const playerId = req.params.playerId;  // Extract playerId from the URL
 
     try {
-        await db.query('DELETE FROM court_players WHERE player_id = ?', [playerId]);
-        res.status(200).send('Player removed successfully');
+        // Check if the player exists in the court_players table
+        const [result] = await db.promise().query('SELECT * FROM court_players WHERE player_id = ?', [playerId]);
+
+        if (result.length === 0) {
+            return res.status(404).send('Player not found.');
+        }
+
+        // If the player exists, remove them from the court
+        await db.promise().query('DELETE FROM court_players WHERE player_id = ?', [playerId]);
+
+        res.status(200).send('Player removed successfully!');
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Error removing player');
+        console.error('Error removing player:', error);
+        res.status(500).send('Error removing player.');
     }
 });
+
 
 app.use(express.static(__dirname));
 
