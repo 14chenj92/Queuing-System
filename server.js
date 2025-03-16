@@ -5,6 +5,42 @@ const app = express();
 const PORT = 3000;
 
 app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+
+const session = require("express-session");
+
+const cors = require("cors");
+
+// Middleware
+app.use(express.json());
+app.use(cors({
+    origin: "http://localhost:3000", 
+    credentials: true
+}));
+
+app.use(session({
+    secret: "your-secret-key",
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 5 * 60 * 1000 } 
+}));
+
+// Save the code in the session
+app.post("/save-code", (req, res) => {
+    req.session.verificationCode = req.body.code;
+    res.send("Code saved in session.");
+});
+
+// Verify the code
+app.post("/verify-code", (req, res) => {
+    if (req.body.code == req.session.verificationCode) {
+        req.session.destroy(); // Clear the session after successful verification
+        res.send("Code verified successfully!");
+    } else {
+        res.status(400).send("Invalid code.");
+    }
+});
+
 
 // Database Connection
 const db = mysql.createConnection({
@@ -90,7 +126,7 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/users', (req, res) => {
-    const sql = 'SELECT username, password FROM users';
+    const sql = 'SELECT username, password, firstName, lastName, email FROM users';
     db.query(sql, (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Failed to fetch users' });
@@ -99,19 +135,50 @@ app.get('/users', (req, res) => {
     });
 });
 
+
 app.put('/users/:username', (req, res) => {
     const { username } = req.params;
-    const { password } = req.body;
+    const { password, firstName, lastName, email } = req.body;
 
-    const sql = 'UPDATE users SET password = ? WHERE username = ?';
-    db.query(sql, [password, username], (err, result) => {
-        if (err) return res.status(500).json({ error: 'Error updating password' });
+    // Ensure at least one field to update
+    if (!password && !firstName && !lastName && !email) {
+        return res.status(400).json({ error: 'No data provided to update' });
+    }
+
+    // Dynamically build the SET clause based on provided fields
+    let updates = [];
+    let values = [];
+
+    if (password) {
+        updates.push('password = ?');
+        values.push(password);
+    }
+    if (firstName) {
+        updates.push('firstName = ?');
+        values.push(firstName);
+    }
+    if (lastName) {
+        updates.push('lastName = ?');
+        values.push(lastName);
+    }
+    if (email) {
+        updates.push('email = ?');
+        values.push(email);
+    }
+
+    // Combine the SQL query
+    const sql = `UPDATE users SET ${updates.join(', ')} WHERE username = ?`;
+    values.push(username);  // Add username as last parameter for WHERE clause
+
+    db.query(sql, values, (err, result) => {
+        if (err) return res.status(500).json({ error: 'Error updating user details' });
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
-        res.json({ message: 'Password updated successfully' });
+        res.json({ message: 'User details updated successfully' });
     });
 });
+
 
 // Delete User
 app.delete('/users/:username', (req, res) => {

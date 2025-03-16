@@ -10,6 +10,16 @@
     <link rel="stylesheet" href="reset.css" />
     <link rel="stylesheet" href="styles.css" />
     <title>Badminton Registration & Booking</title>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+</script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init({
+        publicKey: "mvTBtzs6TShj8eUpt",
+      });
+   })();
+</script>
     <script>
       let users = {};
 
@@ -20,11 +30,13 @@
         const firstName = document.getElementById("firstName").value;
         const lastName = document.getElementById("lastName").value;
         const email = document.getElementById("email").value;
+        const code = document.getElementById("code").value;
 
-        if (!username) {
+
+        if (!username || !firstName || !lastName || !email) {
           Swal.fire({
             icon: "error",
-            title: "Please Enter a Username.",
+            title: "Please fill out all fields.",
           });
           return;
         }
@@ -64,7 +76,7 @@
             let userList = "<h3>Stored Usernames and Passwords</h3><ul>";
             data.forEach((user) => {
               users[user.username] = user.password; // Store data in the `users` object
-              userList += `<li>${user.username}: ${user.password}</li>`;
+              userList += `<li>${user.username}: ${user.password} ${user.firstName} ${user.lastName} ${user.email}</li>`;
             });
             userList += "</ul>";
             document.getElementById("userList").innerHTML = userList;
@@ -76,13 +88,17 @@
     .then((response) => response.json())
     .then((data) => {
       users = {}; // Clear previous data
-      let userList = "<h3>Stored Usernames and Passwords</h3><ul>";
+      let userList = "<h3>Stored Users</h3><ul>";
       data.forEach((user) => {
         users[user.username] = user.password; // Store data in the `users` object
 
         userList += `
           <li>
-            ${user.username}: ${user.password} 
+            <strong>Username:</strong> ${user.username} <br>
+            <strong>Password:</strong> ${user.password} <br>
+            <strong>First Name:</strong> ${user.firstName} <br>
+            <strong>Last Name:</strong> ${user.lastName} <br>
+            <strong>Email:</strong> ${user.email} <br>
             <button onclick="editUser('${user.username}')">Edit</button>
             <button onclick="deleteUser('${user.username}')">Delete</button>
           </li>
@@ -93,6 +109,7 @@
     })
     .catch((err) => console.error("Error fetching users:", err));
 }
+
 
 function editUser(username) {
   let newPassword = prompt(`Enter new password for ${username}:`);
@@ -305,11 +322,22 @@ function deleteUser(username) {
 <input type="text" id="lastName" name="lastName" required />
 
 <br /><br />
+<form id="emailForm">
+  <label for="email">Email:</label>
+  <input type="email" id="email" name="email" required /><br><br>
+  <button type="submit">Send Email</button>
+</form>
+<br /><br />
 
-<label for="email">Email:</label>
-<input type="text" id="email" name="email" required />
+<form id="verifyForm">
+    <label for="code">Enter Verification Code:</label>
+    <input type="text" id="code" name="code" required />
+    <button type="submit">Verify</button>
+</form>
 
-    <button onclick="generatePassword()">Submit</button>
+<p id="message"></p>
+
+    <button onclick="generatePassword()">Create User</button>
     <br /><br />
     <p id="password" style="font-weight: bold"></p>
     <br />
@@ -370,20 +398,21 @@ function deleteUser(username) {
     <h2>Court Status</h2>
     <div id="courtStatus" class="court-container"></div>
     <script>
-      renderCourts();
-      async function removePlayer(playerId) {
-        const response = await fetch(`/remove-player/${playerId}`, {
-            method: 'DELETE'
-        });
+    //   renderCourts();
+    //   async function removePlayer(playerId) {
+    //     const response = await fetch(`/remove-player/${playerId}`, {
+    //         method: 'DELETE'
+    //     });
 
-        if (response.ok) {
-            alert('Player removed successfully!');
-            location.reload(); // Refresh the court list
-        } else {
-            alert('Failed to remove player.');
-        }
-    }
+    //     if (response.ok) {
+    //         alert('Player removed successfully!');
+    //         location.reload(); // Refresh the court list
+    //     } else {
+    //         alert('Failed to remove player.');
+    //     }
+    // }
     </script>
+    <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
   </body>
 </html>
