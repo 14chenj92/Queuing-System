@@ -17,11 +17,11 @@ function sendMail(event) {
         .then(() => {
             alert("A verification code has been sent to your email!");
 
-            // Store code on the backend session
+            // ✅ Fix: Send both email & code to the backend
             fetch("/save-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code: verificationCode })
+                body: JSON.stringify({ email: email, code: verificationCode }) // ✅ Include email
             });
         })
         .catch((error) => {
@@ -29,16 +29,18 @@ function sendMail(event) {
         });
 }
 
+
 // Verify the code
 function verifyCode(event) {
     event.preventDefault();
 
     let enteredCode = document.getElementById("code").value;
+    let email = document.getElementById("email").value; // Get email input
 
     fetch("/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: enteredCode })
+        body: JSON.stringify({ email: email, code: enteredCode }) // Include email
     })
     .then(response => response.text())
     .then(message => {
@@ -46,3 +48,4 @@ function verifyCode(event) {
     })
     .catch(error => console.error("Error verifying code:", error));
 }
+

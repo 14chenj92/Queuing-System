@@ -27,19 +27,65 @@ app.use(session({
 
 // Save the code in the session
 app.post("/save-code", (req, res) => {
-    req.session.verificationCode = req.body.code;
-    res.send("Code saved in session.");
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+        return res.status(400).send("Email and code are required.");
+    }
+
+    req.session.verificationCode = code;
+    req.session.email = email; // ✅ Ensure email is saved in session
+
+    console.log("Saved to session:", req.session.verificationCode, req.session.email);
+    res.send("Verification code saved.");
 });
+
+
 
 // Verify the code
 app.post("/verify-code", (req, res) => {
-    if (req.body.code == req.session.verificationCode) {
-        req.session.destroy(); // Clear the session after successful verification
-        res.send("Code verified successfully!");
+    const { email, code } = req.body;
+
+    // Ensure session data exists
+    if (!req.session.verificationCode || !req.session.email) {
+        return res.status(400).send("No verification code found. Request a new one.");
+    }
+
+    // Check if email matches the one stored in session
+    if (email !== req.session.email) {
+        return res.status(400).send("Email does not match.");
+    }
+
+    // Check if the entered code matches the stored session code
+    if (code == req.session.verificationCode) {
+        db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
+            if (err) {
+                console.error("Database query error:", err);
+                return res.status(500).send("Internal Server Error");
+            }
+
+            if (results.length === 0) {
+                return res.status(404).send("User not found.");
+            }
+
+            // Update approved status
+            db.query("UPDATE users SET approved = TRUE WHERE email = ?", [email], (err) => {
+                if (err) {
+                    console.error("Database update error:", err);
+                    return res.status(500).send("Error updating approval status.");
+                }
+
+                req.session.destroy(); // Clear session after verification
+                res.send("Email verified successfully! Account approved.");
+            });
+        });
     } else {
-        res.status(400).send("Invalid code.");
+        req.session.destroy(); // Prevent infinite retries with the same session
+        res.status(400).send("Invalid code. Request a new one.");
     }
 });
+
+
 
 
 // Database Connection
@@ -66,7 +112,8 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(30) NOT NULL,
     firstName VARCHAR(30) NOT NULL,
     lastName VARCHAR(30) NOT NULL,
-    email VARCHAR(60) NOT NULL UNIQUE
+    email VARCHAR(60) NOT NULL UNIQUE,
+    approved BOOLEAN DEFAULT FALSE
 )`;
 
 
@@ -126,7 +173,7 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/users', (req, res) => {
-    const sql = 'SELECT username, password, firstName, lastName, email FROM users';
+    const sql = 'SELECT username, password, firstName, lastName, email, approved FROM users';
     db.query(sql, (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Failed to fetch users' });
@@ -138,7 +185,7 @@ app.get('/users', (req, res) => {
 
 app.put('/users/:username', (req, res) => {
     const { username } = req.params;
-    const { password, firstName, lastName, email } = req.body;
+    const { password, firstName, lastName, email, approved } = req.body;
 
     // Ensure at least one field to update
     if (!password && !firstName && !lastName && !email) {
