@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badminton Registration</title>
+  <link rel="stylesheet" href="reset.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<script
+type="text/javascript"
+src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
+></script>
+<script type="text/javascript">
+(function () {
+  emailjs.init({
+    publicKey: "mvTBtzs6TShj8eUpt",
+  });
+})();
+</script>
+<body>
+  <h2>Badminton Registration</h2>
+  <form id="emailForm" onsubmit="handleRegistration(event)">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required />
+    <br /><br />
+    <label for="firstName">First Name:</label>
+    <input type="text" id="firstName" name="firstName" required />
+    <br /><br />
+    <label for="lastName">Last Name:</label>
+    <input type="text" id="lastName" name="lastName" required />
+    <button type="submit">Send Email</button>
+  </form>
+  <br /><br />
+
+  <button onclick="generatePassword()">Create User</button>
+
+  <form id="verifyForm">
+    <label for="code">Enter Verification Code:</label>
+    <input type="text" id="code" name="code" required />
+    <button type="submit">Verify</button>
+  </form>
+  <p id="message"></p>
+  <br /><br />
+  <p id="password" style="font-weight: bold"></p>
+  <br />
+  <script src="function.js"></script>
+  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
+
+  <script>
+    // Example of how to handle registration and redirect
+    function handleRegistration(event) {
+      event.preventDefault(); // Prevent form from submitting normally
+
+      // Example logic for successful registration
+      const email = document.getElementById("email").value;
+      const firstName = document.getElementById("firstName").value;
+      const lastName = document.getElementById("lastName").value;
+
+      // Here you would typically send this data to a server to register the user
+      console.log("User registered:", { email, firstName, lastName });
+
+      // After successful registration, redirect to court booking page
+      window.location.href = "court-booking.html"; // Redirect to the court booking page
+    }
+  </script>
+</body>
+</html>
+

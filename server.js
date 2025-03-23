@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
+const path = require('path');
 const app = express();
 const PORT = 3000;
 
@@ -24,6 +25,10 @@ app.use(session({
     saveUninitialized: true,
     cookie: { maxAge: 5 * 60 * 1000 } 
 }));
+
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "main.html"));
+});
 
 // Save the code in the session
 app.post("/save-code", (req, res) => {
@@ -140,27 +145,20 @@ db.query(createCourtsTable, (err) => {
 
 // Routes
 app.post('/register', (req, res) => {
-    const { username, password, firstName, lastName, email } = req.body;
+    const { username, password, firstName, lastName } = req.body;
+    const email = username; // Set email same as username
 
-    // Check if username already exists
-    const checkUserQuery = 'SELECT * FROM users WHERE username = ? OR email = ?';
-    db.query(checkUserQuery, [username, email], (err, result) => {
+    const checkUserQuery = 'SELECT * FROM users WHERE username = ?';
+    db.query(checkUserQuery, [username], (err, result) => {
         if (err) {
             console.log("Error checking duplicates:", err);
             return res.status(500).json({ message: 'Error checking user data' });
         }
 
         if (result.length > 0) {
-            const existingUser = result[0];
-            if (existingUser.username === username) {
-                return res.status(400).json({ message: 'Username already exists' });
-            }
-            if (existingUser.email === email) {
-                return res.status(400).json({ message: 'Email already exists' });
-            }
+            return res.status(400).json({ message: 'Username already exists' });
         }
 
-        // If no duplicates, proceed with the insertion
         const sql = 'INSERT INTO users (username, password, firstName, lastName, email) VALUES (?, ?, ?, ?, ?)';
         db.query(sql, [username, password, firstName, lastName, email], (err, result) => {
             if (err) {
@@ -171,6 +169,7 @@ app.post('/register', (req, res) => {
         });
     });
 });
+
 
 // Login Route
 app.post('/login', (req, res) => {
@@ -345,6 +344,66 @@ app.post('/update-courts', (req, res) => {
     courts = req.body;
     res.json({ message: 'Court data updated successfully.' });
 });
+
+// Remove player from a court (Unbook Court)
+app.post('/unbook-court', async (req, res) => {
+    const { courtId, playersToRemove } = req.body;
+  
+    // Validate request parameters
+    if (!courtId || !Array.isArray(playersToRemove) || playersToRemove.length === 0) {
+      return res.status(400).send("Court ID and players to remove are required.");
+    }
+  
+    try {
+      // Check if the court exists in the in-memory courts data
+      const court = courts[courtId];
+      if (!court) {
+        return res.status(404).send('Court not found.');
+      }
+  
+      let removedPlayers = [];
+  
+      // Loop through each player to remove
+      for (const player of playersToRemove) {
+        // Check if the player is booked on this court
+        const playerIndex = court.currentPlayers.indexOf(player);
+        if (playerIndex !== -1) {
+          // Remove player from the current players list
+          court.currentPlayers.splice(playerIndex, 1);
+          removedPlayers.push(player);
+        } else {
+          console.log(`Player ${player} is not booked on this court.`);
+        }
+      }
+  
+      // If no players were removed, return an error
+      if (removedPlayers.length === 0) {
+        return res.status(400).send('No players were removed.');
+      }
+  
+      // Remove from the database (court_players table)
+      const removeQuery = 'DELETE FROM court_players WHERE user_id IN (?) AND court_id = ?';
+      const [result] = await db.promise().query(removeQuery, [playersToRemove, courtId]);
+  
+      // If no rows were affected, the removal might have failed
+      if (result.affectedRows === 0) {
+        return res.status(500).send('Failed to remove players from the database.');
+      }
+  
+      res.status(200).json({
+        message: 'Players removed successfully',
+        removedPlayers,
+        courtState: court
+      });
+  
+    } catch (error) {
+      console.error('Error unbooking players:', error);
+      res.status(500).send('Error unbooking players.');
+    }
+  });
+  
+
+
 
 // Remove player from a court
 app.delete('/remove-player/:playerId', async (req, res) => {

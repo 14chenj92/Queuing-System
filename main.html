@@ -1,167 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <title>Badminton Court Booking</title>
-    <script>
-        // Fetch the stored username and password from localStorage
-        let username = localStorage.getItem("username");
-        let password = localStorage.getItem("password");
-
-        if (!username || !password) {
-            window.location.href = "index.html"; // Redirect back to the registration page if no user is registered
-        }
-
-        let users = {};
-        users[username] = password; // Add the registered user to the users object
-
-        function bookCourt() {
-            const court = document.getElementById("courtSelection").value;
-            let enteredPlayers = [];
-            
-            for (let i = 1; i <= 4; i++) {
-                const username = document.getElementById(`bookingUsername${i}`).value;
-                const password = document.getElementById(`bookingPassword${i}`).value;
-                if (username && password) {
-                    if (users[username] === password) {
-                        enteredPlayers.push(username);
-                    } else {
-                        alert(`Invalid credentials for ${username}`);
-                        return;
-                    }
-                }
-            }
-
-            if (enteredPlayers.length !== 2 && enteredPlayers.length !== 4) {
-                alert("You can only book a court with 2 or 4 players.");
-                return;
-            }
-
-            if (courts[court].currentPlayers.length === 0) {
-                courts[court].currentPlayers = enteredPlayers;
-                courts[court].timeLeft = 20;
-                startCountdown(court);
-            } else {
-                if (courts[court].queue.length < 5) {
-                    courts[court].queue.push(enteredPlayers);
-                } else {
-                    alert("Queue is full. Maximum 5 groups allowed.");
-                    return;
-                }
-            }
-
-            clearBookingFields();
-            renderCourts();
-        }
-
-        function startCountdown(court) {
-            let interval = setInterval(() => {
-                if (courts[court].timeLeft > 0) {
-                    courts[court].timeLeft--;
-                    renderCourts();
-                } else {
-                    clearInterval(interval);
-                    courts[court].currentPlayers = [];
-                    if (courts[court].queue.length > 0) {
-                        courts[court].currentPlayers = courts[court].queue.shift();
-                        courts[court].timeLeft = 20;
-                        startCountdown(court);
-                    }
-                    renderCourts();
-                }
-            }, 1000);
-        }
-
-        function clearBookingFields() {
-            for (let i = 1; i <= 4; i++) {
-                document.getElementById(`bookingUsername${i}`).value = "";
-                document.getElementById(`bookingPassword${i}`).value = "";
-            }
-        }
-
-        function renderCourts() {
-            let courtDisplay = "";
-            let courtCount = 1;  // To track which court is being rendered
-            for (const [court, details] of Object.entries(courts)) {
-                let minutes = Math.floor(details.timeLeft / 60);
-                let seconds = details.timeLeft % 60;
-
-                // Determine court status: "Open" if no current players, "Closed" if booked and timer running
-                let courtStatusClass = details.currentPlayers.length === 0 ? "open" : "closed";
-
-                courtDisplay += `<div class="court-card ${courtStatusClass}">`;
-                courtDisplay += `<h3>${court}</h3>`;
-                courtDisplay += `<p class="status">${details.currentPlayers.length === 0 ? "Open" : "Closed"}</p>`;
-
-                // If the court is closed, show the remaining time
-                if (courtStatusClass === "closed") {
-                    courtDisplay += `<p>Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}</p>`;
-                }
-
-                courtDisplay += `<p>Current Players: ${details.currentPlayers.join(", ") || "None"}</p>`;
-                for (let i = 0; i < 5; i++) {
-                    courtDisplay += `<p>Queue ${i + 1}: ${details.queue[i] ? details.queue[i].join(", ") : "Empty"}</p>`;
-                }
-
-                courtDisplay += `</div>`;
-
-                // Break after the 5th court to start a new row (second row will have 4 courts)
-                if (courtCount === 5) {
-                    courtDisplay += "<div style='flex-basis: 100%;'></div>"; // force a new row
-                }
-
-                courtCount++;
-            }
-            document.getElementById("courtStatus").innerHTML = courtDisplay;
-        }
-
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badminton Court Booking System</title>
+  <link rel="stylesheet" href="reset.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <h2>Badminton Court Booking</h2>
-    <label>Select Court:</label>
-    <select id="courtSelection">
-        <option value="Court 1">Court 1</option>
-        <option value="Court 2">Court 2</option>
-        <option value="Court 3">Court 3</option>
-        <option value="Court 4">Court 4</option>
-        <option value="Court 5">Court 5</option>
-        <option value="Court 6">Court 6</option>
-        <option value="Court 7">Court 7</option>
-        <option value="Court 8">Court 8</option>
-        <option value="Court 9">Court 9</option>
-    </select>
-    <br><br>
-
-    <h3>Enter Player Details</h3>
-    <div>
-        <label>Player 1:</label>
-        <input type="text" id="bookingUsername1" placeholder="Username">
-        <input type="password" id="bookingPassword1" placeholder="Password">
-    </div>
-    <div>
-        <label>Player 2:</label>
-        <input type="text" id="bookingUsername2" placeholder="Username">
-        <input type="password" id="bookingPassword2" placeholder="Password">
-    </div>
-    <div>
-        <label>Player 3:</label>
-        <input type="text" id="bookingUsername3" placeholder="Username">
-        <input type="password" id="bookingPassword3" placeholder="Password">
-    </div>
-    <div>
-        <label>Player 4:</label>
-        <input type="text" id="bookingUsername4" placeholder="Username">
-        <input type="password" id="bookingPassword4" placeholder="Password">
-    </div>
-
-    <br>
-    <button onclick="bookCourt()">Book Court</button>
-
-    <h2>Court Status</h2>
-    <div id="courtStatus" class="court-container"></div>
-    <script>renderCourts();</script>
+  <h1>Welcome to Badminton Court Booking System</h1>
+  <nav>
+    <ul>
+      <li><a href="registration.html">Badminton Registration</a></li>
+      <li><a href="admin.html">Login</a></li>
+      <li><a href="booking.html">Badminton Court Booking</a></li>
+    </ul>
+  </nav>
+  <script src="function.js"></script>
+  <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
 </body>
 </html>

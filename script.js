@@ -5,7 +5,7 @@ function sendMail(event) {
     event.preventDefault();
 
     let verificationCode = Math.floor(100000 + Math.random() * 900000); // 6-digit code
-    let email = document.getElementById("email").value;
+    let email = document.getElementById("username").value;
 
     let params = {
         email: email,
@@ -34,7 +34,7 @@ function verifyCode(event) {
     event.preventDefault();
 
     let enteredCode = document.getElementById("code").value;
-    let email = document.getElementById("email").value; 
+    let email = document.getElementById("username").value; 
 
     fetch("/verify-code", {
         method: "POST",

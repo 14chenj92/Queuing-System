@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users</title>
+    <link rel="stylesheet" href="reset.css" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <h2>All Registered Users</h2>
+    <div id="userList"></div>
+    <div id="userDetails"></div>
+    <select id="courtSelection">
+        <option value="Court 1">Court 1</option>
+        <option value="Court 2">Court 2</option>
+        <option value="Court 3">Court 3</option>
+        <option value="Court 4">Court 4</option>
+        <option value="Court 5">Court 5</option>
+        <option value="Court 6">Court 6</option>
+        <option value="Court 7">Court 7</option>
+        <option value="Court 8">Court 8</option>
+        <option value="Court 9">Court 9</option>
+        <option value="Court 10">Court 10</option>
+      </select>
+    <h2>Court Status</h2>
+    <div id="courtStatus" class="court-container"></div>
+    <script src="function.js"></script>
+    <script>
+        // showUsers();
+        renderCourts();
+    </script>
+    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
+</body>
+</html>

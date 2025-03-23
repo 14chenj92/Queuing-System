@@ -27,7 +27,7 @@
       function generatePassword() {
         const words = ["red", "blue", "green", "pink", "dog", "cat", "fox"];
         const password = words[Math.floor(Math.random() * words.length)];
-        const username = document.getElementById("username").value;
+        const username = document.getElementById("email").value;
         const firstName = document.getElementById("firstName").value;
         const lastName = document.getElementById("lastName").value;
         const email = document.getElementById("email").value;
@@ -90,32 +90,49 @@
           .catch((err) => console.error("Error fetching users:", err));
       }
       function showUsers() {
-        fetch("/users")
-          .then((response) => response.json())
-          .then((data) => {
-            users = {}; // Clear previous data
-            let userList = "<h3>Stored Users</h3><ul>";
-            data.forEach((user) => {
-              users[user.username] = user.password; // Store data in the `users` object
+  fetch("/users")
+    .then((response) => response.json())
+    .then((data) => {
+      users = {}; // Clear previous data
+      let userDropdown = `<h3>Select a User</h3><select id="userSelect" onchange="displayUserDetails()">`;
+      userDropdown += `<option value="">-- Select a User --</option>`;
 
-              userList += `
-          <li>
-            <strong>Username:</strong> ${user.username} <br>
-            <strong>Password:</strong> ${user.password} <br>
-            <strong>First Name:</strong> ${user.firstName} <br>
-            <strong>Last Name:</strong> ${user.lastName} <br>
-            <strong>Email:</strong> ${user.email} <br>
-            <strong>Approved:</strong> ${user.approved} <br>
-            <button onclick="editUser('${user.username}')">Edit</button>
-            <button onclick="deleteUser('${user.username}')">Delete</button>
-          </li>
-        `;
-            });
-            userList += "</ul>";
-            document.getElementById("userList").innerHTML = userList;
-          })
-          .catch((err) => console.error("Error fetching users:", err));
-      }
+      data.forEach((user) => {
+        users[user.username] = user; // Store full user data in the `users` object
+
+        userDropdown += `<option value="${user.username}">${user.username}</option>`;
+      });
+
+      userDropdown += `</select>`;
+      document.getElementById("userList").innerHTML = userDropdown;
+      document.getElementById("userDetails").innerHTML = ""; // Clear previous details
+    })
+    .catch((err) => console.error("Error fetching users:", err));
+}
+
+function displayUserDetails() {
+  let selectedUser = document.getElementById("userSelect").value;
+  if (selectedUser) {
+    let user = users[selectedUser];
+
+    let userDetails = `
+      <h3>User Details</h3>
+      <strong>Username:</strong> ${user.username} <br>
+      <strong>Password:</strong> ${user.password} <br>
+      <strong>First Name:</strong> ${user.firstName} <br>
+      <strong>Last Name:</strong> ${user.lastName} <br>
+      <strong>Email:</strong> ${user.email} <br>
+      <strong>Approved:</strong> ${user.approved} <br>
+      <button onclick="editUser('${user.username}')">Edit</button>
+      <button onclick="deleteUser('${user.username}')">Delete</button>
+    `;
+
+    document.getElementById("userDetails").innerHTML = userDetails;
+  } else {
+    document.getElementById("userDetails").innerHTML = ""; // Clear details if no user is selected
+  }
+}
+
 
       function editUser(username) {
   let newPassword = prompt(`Enter new password for ${username} (leave blank to keep unchanged):`);
@@ -255,6 +272,94 @@
         renderCourts();
       }
 
+      async function unbookCourt() {
+  const court = document.getElementById("courtSelection").value;
+  let enteredPlayers = [];
+
+  // Track all currently booked players
+  const allBookedPlayers = Object.values(courts).flatMap(
+    (court) => court.currentPlayers
+  );
+
+  for (let i = 1; i <= 4; i++) {
+    const username = document.getElementById(`unbookingUsername${i}`).value;
+    const password = document.getElementById(`unbookingPassword${i}`).value;
+
+    if (username && password) {
+      // Validate user via API
+      const isValid = await validateUser(username, password);
+      if (!isValid) return;
+
+      // Check if the user is part of the current booking
+      if (!allBookedPlayers.includes(username)) {
+        Swal.fire({
+          icon: "error",
+          title: `User ${username} is not part of the current court booking.`,
+        });
+        return;
+      }
+
+      enteredPlayers.push(username);
+    }
+  }
+
+  // Ensure there are 2 or 4 players
+  if (enteredPlayers.length !== 2 && enteredPlayers.length !== 4) {
+    Swal.fire({
+      icon: "error",
+      title: "You must unbook exactly 2 or 4 players.",
+    });
+    return;
+  }
+
+  // Handle unbooking logic
+  const courtBooking = courts[court];
+  const currentPlayers = courtBooking.currentPlayers;
+
+  // Check if the court has the players entered
+  const playersToUnbook = enteredPlayers.filter((player) =>
+    currentPlayers.includes(player)
+  );
+
+  if (playersToUnbook.length === 0) {
+    Swal.fire({
+      icon: "error",
+      title: "No matching players found for unbooking.",
+    });
+    return;
+  }
+
+  // Remove players from the current booking
+  courtBooking.currentPlayers = currentPlayers.filter(
+    (player) => !playersToUnbook.includes(player)
+  );
+
+  // If no players are left, remove the court booking entirely
+  if (courtBooking.currentPlayers.length === 0) {
+    courtBooking.timeLeft = 0;
+  }
+
+  // Update queue if the court is now empty and there are players waiting
+  if (courtBooking.currentPlayers.length === 0 && courtBooking.queue.length > 0) {
+    const nextQueue = courtBooking.queue.shift(); // Move the first group from the queue to the court
+    courtBooking.currentPlayers = nextQueue;
+    courtBooking.timeLeft = 20;
+    startCountdown(court);
+  }
+
+  saveCourtData();
+  clearBookingFields();
+  renderCourts();
+
+  // Success modal after unbooking
+  Swal.fire({
+    icon: "success",
+    title: "Court Unbooked Successfully",
+    text: `Players ${enteredPlayers.join(", ")} have been successfully unbooked from the court.`,
+  });
+}
+
+
 
 
 
@@ -315,6 +420,8 @@
         for (let i = 1; i <= 4; i++) {
           document.getElementById(`bookingUsername${i}`).value = "";
           document.getElementById(`bookingPassword${i}`).value = "";
+          document.getElementById(`unbookingUsername${i}`).value = "";
+          document.getElementById(`unbookingPassword${i}`).value = "";
         }
       }
 
@@ -386,21 +493,15 @@
   </head>
   <body>
     <h2>Badminton Registration</h2>
-    <label for="username">Create Your Username:</label>
-    <input type="text" id="username" name="username" required />
-    <br /><br />
-    <label for="firstName">First Name:</label>
-    <input type="text" id="firstName" name="firstName" required />
-
-    <br /><br />
-
-    <label for="lastName">Last Name:</label>
-    <input type="text" id="lastName" name="lastName" required />
-
-    <br /><br />
     <form id="emailForm">
       <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required /><br /><br />
+      <input type="email" id="email" name="email" required />
+      <br /><br />
+      <label for="firstName">First Name:</label>
+      <input type="text" id="firstName" name="firstName" required />
+      <br /><br />
+      <label for="lastName">Last Name:</label>
+      <input type="text" id="lastName" name="lastName" required />
       <button type="submit">Send Email</button>
     </form>
     <br /><br />
@@ -417,7 +518,9 @@
     <p id="password" style="font-weight: bold"></p>
     <br />
     <button onclick="showUsers()">Show All Users</button>
+
     <div id="userList"></div>
+    <div id="userDetails"></div>
 
     <h2>Badminton Court Booking</h2>
     <label>Select Court:</label>
@@ -458,6 +561,34 @@
 
     <br />
     <button onclick="bookCourt()">Book Court</button>
+
+    <h3>Unbook Court</h3>
+
+<div>
+  <label for="unbookingUsername1">Player 1:</label>
+  <input type="text" id="unbookingUsername1" placeholder="Username" />
+  <input type="password" id="unbookingPassword1" placeholder="Password" />
+</div>
+
+<div>
+  <label for="unbookingUsername2">Player 2:</label>
+  <input type="text" id="unbookingUsername2" placeholder="Username" />
+  <input type="password" id="unbookingPassword2" placeholder="Password" />
+</div>
+
+<div>
+  <label for="unbookingUsername3">Player 3:</label>
+  <input type="text" id="unbookingUsername3" placeholder="Username" />
+  <input type="password" id="unbookingPassword3" placeholder="Password" />
+</div>
+
+<div>
+  <label for="unbookingUsername4">Player 4:</label>
+  <input type="text" id="unbookingUsername4" placeholder="Username" />
+  <input type="password" id="unbookingPassword4" placeholder="Password" />
+</div>
+
+<button onclick="unbookCourt()">Unbook Court</button>
 
     
 
