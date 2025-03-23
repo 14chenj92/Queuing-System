@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <button onclick="goToHome()" class="back-button">⬅ Back </button>
   <h2>Badminton Court Booking</h2>
   <label>Select Court:</label>
   <select id="courtSelection">
@@ -20,28 +21,28 @@
     <option value="Court 7">Court 7</option>
     <option value="Court 8">Court 8</option>
     <option value="Court 9">Court 9</option>
-    <option value="Court 10">Court 10</option>
+    <!-- <option value="Court 10">Court 10</option> -->
   </select>
   <br /><br />
   <h3>Enter Player Details</h3>
   <div>
     <label>Player 1:</label>
-    <input type="text" id="bookingUsername1" placeholder="Username" />
+    <input type="text" id="bookingUsername1" placeholder="Email" />
     <input type="password" id="bookingPassword1" placeholder="Password" />
   </div>
   <div>
     <label>Player 2:</label>
-    <input type="text" id="bookingUsername2" placeholder="Username" />
+    <input type="text" id="bookingUsername2" placeholder="Email" />
     <input type="password" id="bookingPassword2" placeholder="Password" />
   </div>
   <div>
     <label>Player 3:</label>
-    <input type="text" id="bookingUsername3" placeholder="Username" />
+    <input type="text" id="bookingUsername3" placeholder="Email" />
     <input type="password" id="bookingPassword3" placeholder="Password" />
   </div>
   <div>
     <label>Player 4:</label>
-    <input type="text" id="bookingUsername4" placeholder="Username" />
+    <input type="text" id="bookingUsername4" placeholder="Email" />
     <input type="password" id="bookingPassword4" placeholder="Password" />
   </div>
 
@@ -52,25 +53,25 @@
 
   <div>
     <label for="unbookingUsername1">Player 1:</label>
-    <input type="text" id="unbookingUsername1" placeholder="Username" />
+    <input type="text" id="unbookingUsername1" placeholder="Email" />
     <input type="password" id="unbookingPassword1" placeholder="Password" />
   </div>
   
   <div>
     <label for="unbookingUsername2">Player 2:</label>
-    <input type="text" id="unbookingUsername2" placeholder="Username" />
+    <input type="text" id="unbookingUsername2" placeholder="Email" />
     <input type="password" id="unbookingPassword2" placeholder="Password" />
   </div>
   
   <div>
     <label for="unbookingUsername3">Player 3:</label>
-    <input type="text" id="unbookingUsername3" placeholder="Username" />
+    <input type="text" id="unbookingUsername3" placeholder="Email" />
     <input type="password" id="unbookingPassword3" placeholder="Password" />
   </div>
   
   <div>
     <label for="unbookingUsername4">Player 4:</label>
-    <input type="text" id="unbookingUsername4" placeholder="Username" />
+    <input type="text" id="unbookingUsername4" placeholder="Email" />
     <input type="password" id="unbookingPassword4" placeholder="Password" />
   </div>
   
@@ -82,6 +83,11 @@
   <script>
     renderCourts();
   </script>
+  <script>
+    function goToHome() {
+      window.location.href = "main.html";
+    }
+  </script>  
   <script src="script.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
 </body>

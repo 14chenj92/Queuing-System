@@ -5,7 +5,7 @@ function sendMail(event) {
     event.preventDefault();
 
     let verificationCode = Math.floor(100000 + Math.random() * 900000); // 6-digit code
-    let email = document.getElementById("username").value;
+    let email = document.getElementById("email").value;
 
     let params = {
         email: email,
@@ -15,7 +15,6 @@ function sendMail(event) {
     // Send the code via email using EmailJS
     emailjs.send("service_cuab1yr", "template_sidhjme", params)
         .then(() => {
-            alert("A verification code has been sent to your email!");
 
             fetch("/save-code", {
                 method: "POST",
@@ -29,12 +28,11 @@ function sendMail(event) {
 }
 
 
-// Verify the code
 function verifyCode(event) {
     event.preventDefault();
 
     let enteredCode = document.getElementById("code").value;
-    let email = document.getElementById("username").value; 
+    let email = document.getElementById("email").value; 
 
     fetch("/verify-code", {
         method: "POST",
@@ -43,8 +41,30 @@ function verifyCode(event) {
     })
     .then(response => response.text())
     .then(message => {
-        document.getElementById("message").innerText = message;
+        Swal.fire({
+            title: "Verification",
+            text: message,
+            icon: message.includes("success") ? "success" : "error",
+            confirmButtonText: "OK"
+        }).then((result) => {
+            if (message.includes("success")) {
+                // Redirect after 5 seconds
+                setTimeout(() => {
+                    window.location.href = "booking.html";
+                }, 3000);
+            }
+        });
     })
-    .catch(error => console.error("Error verifying code:", error));
+    .catch(error => {
+        console.error("Error verifying code:", error);
+        Swal.fire({
+            title: "Error",
+            text: "An error occurred while verifying the code.",
+            icon: "error",
+            confirmButtonText: "OK"
+        });
+    });
 }
+
+
 

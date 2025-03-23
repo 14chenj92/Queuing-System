@@ -6,6 +6,7 @@
   <title>Badminton Registration</title>
   <link rel="stylesheet" href="reset.css" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="registration.css" />
 </head>
 <script
 type="text/javascript"
@@ -19,21 +20,41 @@ src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
 })();
 </script>
 <body>
+  <button onclick="goToHome()" class="back-button">⬅ Back </button>
   <h2>Badminton Registration</h2>
-  <form id="emailForm" onsubmit="handleRegistration(event)">
+  <form id="emailForm">
     <label for="email">Email:</label>
     <input type="email" id="email" name="email" required />
+    
     <br /><br />
     <label for="firstName">First Name:</label>
     <input type="text" id="firstName" name="firstName" required />
     <br /><br />
     <label for="lastName">Last Name:</label>
     <input type="text" id="lastName" name="lastName" required />
-    <button type="submit">Send Email</button>
+    
+    <button type="submit" onclick="generatePassword()">Send Email</button>
   </form>
   <br /><br />
-
-  <button onclick="generatePassword()">Create User</button>
+ 
+<form class="form">
+  <h2 id="heading">Badminton Registration</h2>
+  <div class="field">
+    <img src="images/email.svg" alt="Icon" class="input-icon" width="16" height="16">
+    <input autocomplete="off" placeholder="Username" class="input-field" type="text">
+  </div>
+  <div class="field">
+    <img src="images/person.svg" alt="Icon" class="input-icon" width="16" height="16">
+    <input placeholder="First Name" class="input-field" type="text">
+  </div>
+  <div class="field">
+    <img src="images/person.svg" alt="Icon" class="input-icon" width="16" height="16">
+      <input placeholder="Last Name" class="input-field" type="text">
+    </div>
+  <div class="btn">
+  <button class="button2">SignUp</button>
+  </div>
+</form>
 
   <form id="verifyForm">
     <label for="code">Enter Verification Code:</label>
@@ -47,24 +68,11 @@ src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
   <script src="function.js"></script>
   <script src="script.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
-
   <script>
-    // Example of how to handle registration and redirect
-    function handleRegistration(event) {
-      event.preventDefault(); // Prevent form from submitting normally
-
-      // Example logic for successful registration
-      const email = document.getElementById("email").value;
-      const firstName = document.getElementById("firstName").value;
-      const lastName = document.getElementById("lastName").value;
-
-      // Here you would typically send this data to a server to register the user
-      console.log("User registered:", { email, firstName, lastName });
-
-      // After successful registration, redirect to court booking page
-      window.location.href = "court-booking.html"; // Redirect to the court booking page
+    function goToHome() {
+      window.location.href = "main.html";
     }
-  </script>
+  </script>  
 </body>
 </html>
 

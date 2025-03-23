@@ -7,7 +7,6 @@ function generatePassword() {
   const firstName = document.getElementById("firstName").value;
   const lastName = document.getElementById("lastName").value;
   const email = document.getElementById("email").value;
-  const code = document.getElementById("code").value;
 
   if (!username || !firstName || !lastName || !email) {
     Swal.fire({
@@ -31,24 +30,25 @@ function generatePassword() {
     .then((response) => response.json())
     .then((data) => {
       const passwordDisplay = document.getElementById("password");
-      if (data.message) {
-        if (data.message === "User registered successfully") {
-          passwordDisplay.textContent = "Generated Password: " + password;
-          passwordDisplay.style.color = "green";
-          passwordDisplay.style.fontSize = "24px";
-        } else if (data.message === "Username already exists") {
-          passwordDisplay.textContent =
-            "Username already exists. Please choose another username.";
-          passwordDisplay.style.color = "red";
-        } else if (data.message === "Email already exists") {
-          passwordDisplay.textContent =
-            "Email already exists. Please choose another email.";
-          passwordDisplay.style.color = "red";
-        }
+      if (data.message === "User registered successfully") {
+        Swal.fire({
+          title: "Success!",
+          html: "Generated Password: <strong style='color: green;'>" + password + "</strong>" + 
+                "<br><br>Please check your email for a code to complete verification.",
+          icon: "success",
+          confirmButtonText: "OK"
+        });
+      } 
+       else if (data.message === "Email already exists") {
+        Swal.fire({
+          title: "Error!",
+          text: "Email already exists. Please choose another email.",
+          icon: "error",
+          confirmButtonText: "OK"
+        });
       }
-    })
-    .catch((err) => console.error("Error:", err));
-}
+    }
+    )}
 
 function showUsers() {
   fetch("/users")
@@ -57,7 +57,7 @@ function showUsers() {
       users = {}; // Clear previous data
       let userList = "<h3>Stored Usernames and Passwords</h3><ul>";
       data.forEach((user) => {
-        users[user.username] = user.password; // Store data in the `users` object
+        users[user.username] = user.password; 
         userList += `<li>${user.username}: ${user.password} ${user.firstName} ${user.lastName} ${user.email}</li>`;
       });
       userList += "</ul>";
@@ -69,19 +69,19 @@ function showUsers() {
 fetch("/users")
 .then((response) => response.json())
 .then((data) => {
-users = {}; // Clear previous data
+users = {}; 
 let userDropdown = `<h3>Select a User</h3><select id="userSelect" onchange="displayUserDetails()">`;
 userDropdown += `<option value="">-- Select a User --</option>`;
 
 data.forEach((user) => {
-  users[user.username] = user; // Store full user data in the `users` object
+  users[user.username] = user; 
 
   userDropdown += `<option value="${user.username}">${user.username}</option>`;
 });
 
 userDropdown += `</select>`;
 document.getElementById("userList").innerHTML = userDropdown;
-document.getElementById("userDetails").innerHTML = ""; // Clear previous details
+document.getElementById("userDetails").innerHTML = ""; 
 })
 .catch((err) => console.error("Error fetching users:", err));
 }
@@ -98,14 +98,17 @@ let userDetails = `
 <strong>First Name:</strong> ${user.firstName} <br>
 <strong>Last Name:</strong> ${user.lastName} <br>
 <strong>Email:</strong> ${user.email} <br>
-<strong>Approved:</strong> ${user.approved} <br>
+<strong>Registered:</strong> ${user.registered} <br>
+<strong>Membership:</strong> ${user.membership} <br>
+<strong>signInDate:</strong> ${user.signInDate} <br>
+<strong>isSignedIn:</strong> ${user.isSignedIn} <br>
 <button onclick="editUser('${user.username}')">Edit</button>
 <button onclick="deleteUser('${user.username}')">Delete</button>
 `;
 
 document.getElementById("userDetails").innerHTML = userDetails;
 } else {
-document.getElementById("userDetails").innerHTML = ""; // Clear details if no user is selected
+document.getElementById("userDetails").innerHTML = ""; 
 }
 }
 
@@ -116,7 +119,11 @@ let newFirstName = prompt(`Enter new first name for ${username} (leave blank to 
 let newLastName = prompt(`Enter new last name for ${username} (leave blank to keep unchanged):`);
 let newEmail = prompt(`Enter new email for ${username} (leave blank to keep unchanged):`);
 
-let newApproved = confirm(`Approve user ${username}? Click OK for Yes, Cancel for No.`) ? 1 : 0;
+let newregistered = confirm(`Approve user ${username}? Click OK for Yes, Cancel for No.`) ? 1 : 0;
+
+let newMembership = prompt(`Enter new membership for ${username} (leave blank to keep unchanged):`);
+let newSignInDate = prompt(`Enter new sign-in date for ${username} (leave blank to keep unchanged):`);
+let newIsSignedIn = confirm(`Is ${username} currently signed in? Click OK for Yes, Cancel for No.`) ? 1 : 0;
 
 let updatedData = {};
 
@@ -124,7 +131,10 @@ if (newPassword) updatedData.password = newPassword;
 if (newFirstName) updatedData.firstName = newFirstName;
 if (newLastName) updatedData.lastName = newLastName;
 if (newEmail) updatedData.email = newEmail;
-updatedData.approved = newApproved; 
+if (newMembership) updatedData.membership = newMembership;
+if (newSignInDate) updatedData.signInDate = newSignInDate;
+updatedData.isSignedIn = newIsSignedIn;  
+updatedData.registered = newregistered; 
 
 if (Object.keys(updatedData).length === 0) {
 alert("No changes were made.");
@@ -144,7 +154,7 @@ if (data.error) {
   alert(`Error: ${data.error}`);
 } else {
   alert(`User ${username} updated successfully!`);
-  showUsers(); // Refresh the list
+  showUsers(); 
 }
 })
 .catch((err) => console.error("Error updating user:", err));
@@ -160,7 +170,7 @@ function deleteUser(username) {
       .then((response) => response.json())
       .then(() => {
         alert(`${username} deleted`);
-        showUsers(); // Refresh the list
+        showUsers(); 
       })
       .catch((err) => console.error("Error deleting user:", err));
   }
@@ -180,7 +190,7 @@ async function validateUser(username, password) {
       throw new Error(data.error || "Validation failed");
     }
 
-    return true; // User is valid and approved
+    return true; // User is valid and registered
   } catch (error) {
     Swal.fire({ icon: "error", title: error.message });
     return false;
@@ -404,21 +414,27 @@ function clearBookingFields() {
 function renderCourts() {
     let courtDisplay = "";
     let courtCount = 1;
-    
+  
     const isAdminPage = window.location.pathname.includes("admin.html"); // Check if it's the admin page
     
     for (const [court, details] of Object.entries(courts)) {
       let minutes = Math.floor(details.timeLeft / 60);
       let seconds = details.timeLeft % 60;
   
+      // Check if it's Court 10 and apply the 'unavailable' class and status
       let courtStatusClass =
         details.currentPlayers.length === 0 ? "open" : "closed";
+      
+      if (court === "Court 10") {
+        courtStatusClass += " unavailable"; // Add 'unavailable' class for Court 10
+      }
   
       courtDisplay += `<div class="court-card ${courtStatusClass}">`;
       courtDisplay += `<h3>${court}</h3>`;
-      courtDisplay += `<p class="status">${
-        details.currentPlayers.length === 0 ? "Open" : "Closed"
-      }</p>`;
+      
+      // Change status text to "Unavailable" if it's Court 10
+      const statusText = court === "Court 10" ? "Unavailable" : (details.currentPlayers.length === 0 ? "Open" : "Closed");
+      courtDisplay += `<p class="status">${statusText}</p>`;
   
       if (courtStatusClass === "closed") {
         courtDisplay += `<p>Time Left: ${minutes}:${seconds
@@ -438,7 +454,7 @@ function renderCourts() {
           index + 1
         })">Remove</button>` : ""}</p>`;
       });
-      
+  
       for (let i = 0; i < 3; i++) {
         courtDisplay += `<p>Queue ${i + 1}: ${
           details.queue[i] ? details.queue[i].join(", ") : "Empty"
@@ -450,9 +466,9 @@ function renderCourts() {
       courtCount++;
     }
   
-    // Update the court status container with the newly generated HTML
     document.getElementById("courtStatus").innerHTML = courtDisplay;
   }
+  
   
   function removePlayer(playerIndex) {
     const court = document.getElementById("courtSelection").value;

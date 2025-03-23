@@ -2,8 +2,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300&display=swap');
 
 :root {
-  --main-color: #FDD99F; 
-  --secondary-color: #D1D6FD; 
+  --main-color: black; 
+  --secondary-color: #dfe0da; 
   --border-color: #eeaeca;
   --main-font: "Nunito";
   --secondary-font: "Poppins";
@@ -12,8 +12,8 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #f5f5f5; 
-    color: #333; 
+    background-color: var(--secondary-color);
+    color: var(--main-color);
     margin: 0;
     padding: 0;
     display: flex;
@@ -27,9 +27,17 @@ label {
     font-size: 18px;
 }
 
+nav {
+    display: flex;
+    justify-content: center; /* Horizontally centers the nav items */
+    align-items: center; /* Vertically centers the nav items */
+    height: 100vh; /* Ensures the container takes up the full viewport height */
+  }
+  
+
 /* Header */
 h2 {
-    color: #222; /* Darker gray for the header */
+    color: #222; 
     margin-top: 40px;
     margin-bottom: 40px;
     font-family: var(--main-font);
@@ -63,7 +71,7 @@ form {
 }
 
 /* User List Section */
-#userList {
+#userDetails {
     margin-top: 20px;
     padding: 10px;
     border: 1px solid #ccc;
@@ -83,19 +91,13 @@ form {
     margin-bottom: 10px;
 }
 
-#userList button {
-    background-color: red;
-    margin-left: 10px;
-}
-
-#userList button:hover {
-    background-color: darkred;
-}
-
 /* Court Booking Form */
 h3 {
-    margin-top: 20px;
-    font-family: var(--main-font)
+    margin-top: 30px;
+    font-family: var(--main-font);
+    font-size: 26px;
+    margin-bottom: 30px;
+    text-align: center;
 }
 
 div {
@@ -110,16 +112,21 @@ div {
 }
 
 .court-card {
-    padding: 10px;
+    padding: 30px;
     border: 2px solid #000;
     text-align: center;
     background-color: white;
     box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     transition: background-color 0.3s ease;
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center; 
 }
 
-/* Update grid layout to have 4 columns in the second row */
+
 #courtStatus:nth-child(2) {
     grid-template-columns: repeat(4, 1fr);
 }
@@ -171,6 +178,21 @@ div {
     color: #dc3545; /* Red for Closed */
 }
 
+.court-card.unavailable {
+    background-color: gray; /* Make the background gray */
+    color: white; /* Change text color to white for contrast */
+    pointer-events: none; /* Disable interactions */
+  }
+  
+  .court-card.unavailable .status {
+    color: lightgray; /* Make status text appear lighter */
+  }
+  
+  .court-card.unavailable button {
+    display: none; /* Hide the Remove button if the court is unavailable */
+  }
+  
+
 button {
     --color: black;
     font-family: inherit;
@@ -191,34 +213,23 @@ button {
     font-family: var(--main-font)
   }
   
-  /* button:before {
-    content: "";
+  .back-button {
     position: absolute;
-    z-index: -1;
-    background: var(--color);
-    height: 150px;
-    width: 200px;
-    border-radius: 50%;
+    left: 20px;
+    /* padding: 10px 15px; */
+    background-color: #fff;
+    color: #000;
+    border: 2px solid #000;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s;
   }
   
-  button:hover {
+  .back-button:hover {
+    background-color: #000;
     color: #fff;
   }
   
-  button:before {
-    top: 100%;
-    left: 100%;
-    transition: all 0.7s;
-  }
-  
-  button:hover:before {
-    top: -30px;
-    left: -30px;
-  }
-  
-  button:active:before {
-    background: black;
-    transition: background 0s;
-  } */
   
 

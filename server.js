@@ -73,15 +73,15 @@ app.post("/verify-code", (req, res) => {
                 return res.status(404).send("User not found.");
             }
 
-            // Update approved status
-            db.query("UPDATE users SET approved = TRUE WHERE email = ?", [email], (err) => {
+            // Update registered status
+            db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {
                 if (err) {
                     console.error("Database update error:", err);
                     return res.status(500).send("Error updating approval status.");
                 }
 
                 req.session.destroy(); // Clear session after verification
-                res.send("Email verified successfully! Account approved.");
+                res.send("Email verified successfully! Account registered.");
             });
         });
     } else {
@@ -118,8 +118,12 @@ CREATE TABLE IF NOT EXISTS users (
     firstName VARCHAR(30) NOT NULL,
     lastName VARCHAR(30) NOT NULL,
     email VARCHAR(60) NOT NULL UNIQUE,
-    approved BOOLEAN DEFAULT FALSE
-)`;
+    registered BOOLEAN DEFAULT FALSE,
+    membership INT DEFAULT FALSE,
+    signInDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    isSignedIn BOOLEAN DEFAULT FALSE
+);
+`
 
 const createCourtsTable = `
 CREATE TABLE IF NOT EXISTS court_players (
@@ -170,7 +174,7 @@ app.post('/register', (req, res) => {
     });
 });
 
-
+  
 // Login Route
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
@@ -185,8 +189,44 @@ app.post('/login', (req, res) => {
     });
 });
 
+app.post("/check-login-id", (req, res) => {
+    const { loginID } = req.body;
+  
+    const query = "SELECT * FROM users WHERE email = ? OR username = ?";
+    db.query(query, [loginID, loginID], (err, results) => {
+      if (err) {
+        console.error("Database query error:", err);
+        return res.status(500).send({ exists: false });
+      }
+      if (results.length > 0) {
+        return res.json({ exists: true }); // User exists
+      } else {
+        return res.json({ exists: false }); // User does not exist
+      }
+    });
+  });
+
+
+app.post('/check-email', (req, res) => {
+    const { loginID } = req.body;  // loginID is either the email or username entered by the user
+
+    // Query to check if the email exists in the database
+    const query = 'SELECT COUNT(*) AS count FROM users WHERE email = ?';
+    db.query(query, [loginID], (err, result) => {
+        if (err) {
+            // If there's an error with the database query
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        // If count > 0, it means the email exists
+        const emailExists = result[0].count > 0;
+        res.json({ exists: emailExists });  // Respond with JSON
+    });
+});
+
+
 app.get('/users', (req, res) => {
-    const sql = 'SELECT username, password, firstName, lastName, email, approved FROM users';
+    const sql = 'SELECT username, password, firstName, lastName, email, registered, membership, signInDate, isSignedIn FROM users';
     db.query(sql, (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Failed to fetch users' });
@@ -197,15 +237,15 @@ app.get('/users', (req, res) => {
 
 app.put('/users/:username', (req, res) => {
     const { username } = req.params;
-    const { password, firstName, lastName, email, approved } = req.body;
+    const { password, firstName, lastName, email, registered, membership, signInDate, isSignedIn } = req.body;
 
     // Ensure at least one field to update
-    if (!password && !firstName && !lastName && !email && approved === undefined) {
+    if (!password && !firstName && !lastName && !email && registered === undefined) {
         return res.status(400).json({ error: 'No data provided to update' });
     }
 
-    // Query to check if the user is approved
-    const checkUserApprovalQuery = 'SELECT approved FROM users WHERE username = ?';
+    // Query to check if the user exists
+    const checkUserApprovalQuery = 'SELECT registered FROM users WHERE username = ?';
     db.query(checkUserApprovalQuery, [username], (err, result) => {
         if (err) {
             return res.status(500).json({ error: 'Failed to check user approval status' });
@@ -214,11 +254,6 @@ app.put('/users/:username', (req, res) => {
         if (result.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
-
-        // If the user is not approved, prevent update
-        // if (result[0].approved !== 1) {
-        //     return res.status(403).json({ error: `User ${username} is not approved. Please verify your email first.` });
-        // }
 
         // Dynamically build the SET clause based on provided fields
         let updates = [];
@@ -240,12 +275,29 @@ app.put('/users/:username', (req, res) => {
             updates.push('email = ?');
             values.push(email);
         }
-        if (approved !== undefined) {
-            updates.push('approved = ?');
-            values.push(approved);
+        if (registered !== undefined) {
+            updates.push('registered = ?');
+            values.push(registered);
+        }
+        if (membership !== undefined) {
+            updates.push('membership = ?');
+            values.push(membership);
+        }
+        if (signInDate !== undefined) {
+            updates.push('signInDate = ?');
+            values.push(signInDate);
+        }
+        if (isSignedIn !== undefined) {
+            updates.push('isSignedIn = ?');
+            values.push(isSignedIn);
         }
 
         // Ensure there are fields to update
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No valid fields to update' });
+        }
+
+        // Build the update query
         const query = `UPDATE users SET ${updates.join(', ')} WHERE username = ?`;
         values.push(username);
 
@@ -267,7 +319,7 @@ app.put('/users/:username', (req, res) => {
 app.post('/users/validate', (req, res) => {
     const { username, password } = req.body;
 
-    const sql = 'SELECT password, approved FROM users WHERE username = ?';
+    const sql = 'SELECT password, registered FROM users WHERE username = ?';
     db.query(sql, [username], (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
@@ -283,14 +335,36 @@ app.post('/users/validate', (req, res) => {
             return res.status(401).json({ error: 'Incorrect password' });
         }
 
-        if (user.approved !== 1) {
-            return res.status(403).json({ error: 'User not approved. Please verify your email.' });
+        if (user.registered !== 1) {
+            return res.status(403).json({ error: 'User not registered. Please verify your email.' });
+        }
+
+        if (user.isSignedIn !== 1) {
+            return res.status(403).json({ error: 'User not signed. Please sign in first.' });
         }
 
         res.json({ success: true });
     });
 });
 
+// Endpoint to update the isSignedIn status
+app.put('/update-signin-status', (req, res) => {
+    const { loginID, isSignedIn } = req.body;
+  
+    const query = 'UPDATE users SET isSignedIn = ? WHERE email = ?';  // Assuming you're using email as loginID
+    db.query(query, [isSignedIn, loginID], (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: 'Failed to update sign-in status' });
+      }
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      res.json({ success: true });
+    });
+  });
+  
 
 
 // Delete User
