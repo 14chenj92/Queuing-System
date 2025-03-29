@@ -201,10 +201,26 @@ async function bookCourt() {
   const court = document.getElementById("courtSelection").value;
   let enteredPlayers = [];
 
+  // Fetch user data BEFORE proceeding with the booking logic
+  let users = {};
+  try {
+    const response = await fetch("/users");
+    const data = await response.json();
+    users = data.reduce((acc, user) => {
+      acc[user.username] = `${user.firstName} ${user.lastName}`;
+      return acc;
+    }, {});
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error fetching user data. Please try again.",
+    });
+    return;
+  }
+
   // Track all currently booked players
-  const allBookedPlayers = Object.values(courts).flatMap(
-    (court) => court.currentPlayers
-  );
+  const allBookedPlayers = Object.values(courts).flatMap((court) => court.currentPlayers);
 
   for (let i = 1; i <= 4; i++) {
     const username = document.getElementById(`bookingUsername${i}`).value;
@@ -216,15 +232,17 @@ async function bookCourt() {
       if (!isValid) return;
 
       // Check if user is already booked
-      if (allBookedPlayers.includes(username)) {
+      if (allBookedPlayers.includes(users[username])) {
         Swal.fire({
           icon: "error",
-          title: `User ${username} is already booked on another court.`,
+          title: `User ${users[username]} is already booked on another court.`,
         });
         return;
       }
 
-      enteredPlayers.push(username);
+      // Replace username with full name
+      const fullName = users[username] || username; // Fallback to username if full name is unavailable
+      enteredPlayers.push(fullName);
     }
   }
 
@@ -258,92 +276,114 @@ async function bookCourt() {
   renderCourts();
 }
 
+
+
 async function unbookCourt() {
-const court = document.getElementById("courtSelection").value;
-let enteredPlayers = [];
+  const court = document.getElementById("courtSelection").value;
+  let enteredPlayers = [];
 
-// Track all currently booked players
-const allBookedPlayers = Object.values(courts).flatMap(
-(court) => court.currentPlayers
-);
+  // Fetch user data BEFORE proceeding with the unbooking logic
+  let users = {};
+  try {
+    const response = await fetch("/users");
+    const data = await response.json();
+    users = data.reduce((acc, user) => {
+      acc[user.username] = `${user.firstName} ${user.lastName}`;
+      return acc;
+    }, {});
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error fetching user data. Please try again.",
+    });
+    return;
+  }
 
-for (let i = 1; i <= 4; i++) {
-const username = document.getElementById(`unbookingUsername${i}`).value;
-const password = document.getElementById(`unbookingPassword${i}`).value;
+  // Track all currently booked players (with full names)
+  const allBookedPlayers = Object.values(courts).flatMap((court) => court.currentPlayers);
 
-if (username && password) {
-// Validate user via API
-const isValid = await validateUser(username, password);
-if (!isValid) return;
+  for (let i = 1; i <= 4; i++) {
+    const username = document.getElementById(`unbookingUsername${i}`).value;
+    const password = document.getElementById(`unbookingPassword${i}`).value;
 
-// Check if the user is part of the current booking
-if (!allBookedPlayers.includes(username)) {
+    if (username && password) {
+      // Validate user via API
+      const isValid = await validateUser(username, password);
+      if (!isValid) return;
+
+      // Replace username with full name
+      const fullName = users[username] || username; // Fallback to username if full name is unavailable
+
+      // Check if the user is part of the current booking
+      if (!allBookedPlayers.includes(fullName)) {
+        Swal.fire({
+          icon: "error",
+          title: `User ${fullName} is not part of the current court booking.`,
+        });
+        return;
+      }
+
+      enteredPlayers.push(fullName);
+    }
+  }
+
+  // Ensure exactly 2 or 4 players are unbooked
+  if (enteredPlayers.length !== 2 && enteredPlayers.length !== 4) {
+    Swal.fire({
+      icon: "error",
+      title: "You must unbook exactly 2 or 4 players.",
+    });
+    return;
+  }
+
+  // Handle unbooking logic
+  const courtBooking = courts[court];
+  const currentPlayers = courtBooking.currentPlayers;
+
+  // Check if the court has the players entered
+  const playersToUnbook = enteredPlayers.filter((player) =>
+    currentPlayers.includes(player)
+  );
+
+  if (playersToUnbook.length === 0) {
+    Swal.fire({
+      icon: "error",
+      title: "No matching players found for unbooking.",
+    });
+    return;
+  }
+
+  // Remove players from the current booking
+  courtBooking.currentPlayers = currentPlayers.filter(
+    (player) => !playersToUnbook.includes(player)
+  );
+
+  // If no players are left, reset the court
+  if (courtBooking.currentPlayers.length === 0) {
+    courtBooking.timeLeft = 0;
+  }
+
+  // Move the next group from the queue if the court is empty
+  if (courtBooking.currentPlayers.length === 0 && courtBooking.queue.length > 0) {
+    const nextQueue = courtBooking.queue.shift(); // Move first queued group to the court
+    courtBooking.currentPlayers = nextQueue;
+    courtBooking.timeLeft = 20;
+    startCountdown(court);
+  }
+
+  saveCourtData();
+  clearBookingFields();
+  renderCourts();
+
+  // Success modal after unbooking
   Swal.fire({
-    icon: "error",
-    title: `User ${username} is not part of the current court booking.`,
+    icon: "success",
+    title: "Court Unbooked Successfully",
+    text: `Players ${enteredPlayers.join(", ")} have been successfully unbooked from the court.`,
   });
-  return;
 }
 
-enteredPlayers.push(username);
-}
-}
-
-// Ensure there are 2 or 4 players
-if (enteredPlayers.length !== 2 && enteredPlayers.length !== 4) {
-Swal.fire({
-icon: "error",
-title: "You must unbook exactly 2 or 4 players.",
-});
-return;
-}
-
-// Handle unbooking logic
-const courtBooking = courts[court];
-const currentPlayers = courtBooking.currentPlayers;
-
-// Check if the court has the players entered
-const playersToUnbook = enteredPlayers.filter((player) =>
-currentPlayers.includes(player)
-);
-
-if (playersToUnbook.length === 0) {
-Swal.fire({
-icon: "error",
-title: "No matching players found for unbooking.",
-});
-return;
-}
-
-// Remove players from the current booking
-courtBooking.currentPlayers = currentPlayers.filter(
-(player) => !playersToUnbook.includes(player)
-);
-
-// If no players are left, remove the court booking entirely
-if (courtBooking.currentPlayers.length === 0) {
-courtBooking.timeLeft = 0;
-}
-
-// Update queue if the court is now empty and there are players waiting
-if (courtBooking.currentPlayers.length === 0 && courtBooking.queue.length > 0) {
-const nextQueue = courtBooking.queue.shift(); // Move the first group from the queue to the court
-courtBooking.currentPlayers = nextQueue;
-courtBooking.timeLeft = 20;
-startCountdown(court);
-}
-
-saveCourtData();
-clearBookingFields();
-renderCourts();
-
-// Success modal after unbooking
-Swal.fire({
-icon: "success",
-title: "Court Unbooked Successfully",
-text: `Players ${enteredPlayers.join(", ")} have been successfully unbooked from the court.`,
-});
-}
 
 
 

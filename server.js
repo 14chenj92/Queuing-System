@@ -150,7 +150,7 @@ db.query(createCourtsTable, (err) => {
 // Routes
 app.post('/register', (req, res) => {
     const { username, password, firstName, lastName } = req.body;
-    const email = username; // Set email same as username
+    const email = username; 
 
     const checkUserQuery = 'SELECT * FROM users WHERE username = ?';
     db.query(checkUserQuery, [username], (err, result) => {
@@ -335,13 +335,13 @@ app.post('/users/validate', (req, res) => {
             return res.status(401).json({ error: 'Incorrect password' });
         }
 
-        if (user.registered !== 1) {
-            return res.status(403).json({ error: 'User not registered. Please verify your email.' });
-        }
+        // if (user.registered !== 1) {
+        //     return res.status(403).json({ error: 'User not registered. Please verify your email.' });
+        // }
 
-        if (user.isSignedIn !== 1) {
-            return res.status(403).json({ error: 'User not signed. Please sign in first.' });
-        }
+        // if (user.isSignedIn !== 1) {
+        //     return res.status(403).json({ error: 'User not signed. Please sign in first.' });
+        // }
 
         res.json({ success: true });
     });
