@@ -17,13 +17,19 @@ body {
     padding: 0;
     height: 100vh;
     display: flex;
-    justify-content: center;
+    /* justify-content: center; */
     align-items: center;
     flex-direction: column;
     font-family: var(--main-font);
     position: relative; 
+    margin-top: 3%;
   }
   
+  #logo {
+    /* width: 500px; */
+    height: 400px;
+    padding: 5%;
+  }
   /* Header */
   h1 {
     font-size: 2rem;

@@ -39,22 +39,22 @@ function verifyCode(event) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, code: enteredCode }) 
     })
-    .then(response => response.text())
-    .then(message => {
+    .then(response => response.json()) 
+    .then(data => {
         Swal.fire({
             title: "Verification",
-            text: message,
-            icon: message.includes("success") ? "success" : "error",
+            html: data.generatedPassword, 
+            icon: data.message.includes("success") ? "success" : "error",
             confirmButtonText: "OK"
         }).then((result) => {
-            if (message.includes("success")) {
-                // Redirect after 5 seconds
+            if (data.message.includes("success")) {
+                // Redirect after 3 seconds
                 setTimeout(() => {
-                    window.location.href = "booking.html";
-                }, 3000);
+                    window.location.href = "main.html";
+                }, 2000);
             }
         });
-    })
+    })   
     .catch(error => {
         console.error("Error verifying code:", error);
         Swal.fire({

@@ -8,72 +8,73 @@
   <link rel="stylesheet" href="main.css" />
 </head>
 <body>
-    <button onclick="goToHome()" class="back-button">⬅ Back </button>
-    <h1>Login</h1>
-    <div class="login-box">
-      <label for="login">Email:</label>
-      <input type="text" id="login" name="login" required />
-      <br /><br />
-      <a href="#" id="login-check" class="cta">
-          <span>Login</span>
-          <svg width="15px" height="10px" viewBox="0 0 13 10">
-            <path d="M1,5 L11,5"></path>
-            <polyline points="8 1 12 5 8 9"></polyline>
-          </svg>
-      </a>
-    </div>
-    <script src="function.js"></script>
-    <script src="script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
-    <script>
-      document.getElementById('login-check').addEventListener('click', function(event) {
-        event.preventDefault(); 
-        const loginID = document.getElementById('login').value; 
-  
+  <button onclick="goToHome()" class="back-button">⬅ Back </button>
+  <h1>Login</h1>
+  <div class="login-box">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required />
+    <br /><br />
+    <button id="login-check" class="cta" onclick="login()">
+        <span>Login</span>
+    </button>
+  </div>
+  <script src="function.js"></script>
+  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
+  <script>
+async function login() {
+    const email = document.getElementById("email").value;
 
-        fetch("/check-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ loginID: loginID })  
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.exists) {
-            fetch(`/update-signin-status`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ loginID: loginID, isSignedIn: 1 })  // Send the loginID and new isSignedIn status
-    })
-            window.location.href = "booking.html";
-          } else {
-            Swal.fire({
-              title: "Error",
-              text: "This email does not exist. Please register before logging in.",
-              icon: "error",
-              confirmButtonText: "OK"
-            });
-          }
-        })
-        .catch(error => {
-          console.error("Error:", error);
-          Swal.fire({
-            title: "Error",
-            text: "There was an issue with the server. Please try again later.",
-            icon: "error",
-            confirmButtonText: "OK"
-          });
+    if (!email) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Please enter a valid email address.'
         });
-      });
-    </script>
-      <script>
-        function goToHome() {
-          window.location.href = "main.html";
+        return;
+    }
+
+    // Send the login request to the server
+    const response = await fetch("/login", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+        headers: {
+            "Content-Type": "application/json"
         }
-      </script>  
-  </body>
-  
+    });
+
+    const result = await response.json();
+
+    // Handle the result based on the user's status
+    if (result.status === "approved") {
+        Swal.fire({
+            icon: 'success',
+            title: 'Login Approved',
+            html: `You are now logged in. \n
+            Your password for today is <strong style="color: green;">${result.password}</strong>`,
+        })
+        .then(() => {
+            // Redirect after SweetAlert
+            window.location.href = "booking.html";
+        });
+    } else if (result.status === "pending") {
+      Swal.fire({
+            icon: 'info',
+            title: 'Pending Approval',
+            text: 'Your login request is pending approval by the admin.'
+        })
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Login Failed',
+            text: 'Email not found.'
+        });
+    }
+}
+
+    function goToHome() {
+      window.location.href = "main.html";
+    }
+  </script>
+</body>
 </html>

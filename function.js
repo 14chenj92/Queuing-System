@@ -33,8 +33,8 @@ function generatePassword() {
       if (data.message === "User registered successfully") {
         Swal.fire({
           title: "Success!",
-          html: "Generated Password: <strong style='color: green;'>" + password + "</strong>" + 
-                "<br><br>Please check your email for a code to complete verification.",
+          html:  
+              "<br><br>Please check your email for a code to complete verification.",
           icon: "success",
           confirmButtonText: "OK"
         });
@@ -50,21 +50,6 @@ function generatePassword() {
     }
     )}
 
-function showUsers() {
-  fetch("/users")
-    .then((response) => response.json())
-    .then((data) => {
-      users = {}; // Clear previous data
-      let userList = "<h3>Stored Usernames and Passwords</h3><ul>";
-      data.forEach((user) => {
-        users[user.username] = user.password; 
-        userList += `<li>${user.username}: ${user.password} ${user.firstName} ${user.lastName} ${user.email}</li>`;
-      });
-      userList += "</ul>";
-      document.getElementById("userList").innerHTML = userList;
-    })
-    .catch((err) => console.error("Error fetching users:", err));
-}
 function showUsers() {
 fetch("/users")
 .then((response) => response.json())
@@ -87,30 +72,112 @@ document.getElementById("userDetails").innerHTML = "";
 }
 
 function displayUserDetails() {
-let selectedUser = document.getElementById("userSelect").value;
-if (selectedUser) {
-let user = users[selectedUser];
+  let selectedUser = document.getElementById("userSelect").value;
+  if (selectedUser) {
+      let user = users[selectedUser];
 
-let userDetails = `
-<h3>User Details</h3>
-<strong>Username:</strong> ${user.username} <br>
-<strong>Password:</strong> ${user.password} <br>
-<strong>First Name:</strong> ${user.firstName} <br>
-<strong>Last Name:</strong> ${user.lastName} <br>
-<strong>Email:</strong> ${user.email} <br>
-<strong>Registered:</strong> ${user.registered} <br>
-<strong>Membership:</strong> ${user.membership} <br>
-<strong>signInDate:</strong> ${user.signInDate} <br>
-<strong>isSignedIn:</strong> ${user.isSignedIn} <br>
-<button onclick="editUser('${user.username}')">Edit</button>
-<button onclick="deleteUser('${user.username}')">Delete</button>
-`;
+      let formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+      });
 
-document.getElementById("userDetails").innerHTML = userDetails;
-} else {
-document.getElementById("userDetails").innerHTML = ""; 
+      let userDetails = `
+      <h3>User Details</h3>
+      <strong>Username:</strong> ${user.username} <br>
+      <strong>Password:</strong> ${user.password} <br>
+      <strong>First Name:</strong> ${user.firstName} <br>
+      <strong>Last Name:</strong> ${user.lastName} <br>
+      <strong>Email:</strong> ${user.email} <br>
+      <strong>Registered:</strong> ${user.registered} <br>
+      <strong>Membership:</strong> ${user.membership} <br>
+      <strong>Sign In Date:</strong> ${formattedSignInDate} <br>
+      <strong>isSignedIn:</strong> ${user.isSignedIn} <br>
+      <button onclick="editUser('${user.username}')">Edit</button>
+      <button onclick="deleteUser('${user.username}')">Delete</button>
+      `;
+
+      let totalUsers = Object.keys(users).length;
+      let totalMemberships = Object.values(users).reduce((sum, user) => sum + user.membership, 0);
+
+      // Calculate total registered at any time
+      let totalRegisteredAtAnyTime = Object.values(users).length;
+
+      // Get users signed in today
+      let today = new Date();
+      let signedInTodayUsers = Object.values(users).filter(user => {
+          let signInDate = new Date(user.signInDate);
+          return signInDate.getFullYear() === today.getFullYear() &&
+                 signInDate.getMonth() === today.getMonth() &&
+                 signInDate.getDate() === today.getDate();
+      });
+
+      let totalSignedInToday = signedInTodayUsers.length;
+
+      let statsHtml = `
+      <h3>User Statistics</h3>
+      <strong>Total Users:</strong> ${totalUsers} <br>
+      <strong>Total Memberships:</strong> ${totalMemberships} <br>
+      <strong>Total Registered All Time:</strong> ${totalRegisteredAtAnyTime} <br>
+      <strong>Total Signed In Today:</strong> ${totalSignedInToday} <br>
+      `;
+
+      // Create dropdown for users signed in today
+      let signedInDropdown = `<label for="signedInSelect"><h3>Users Signed In Today</h3></label>
+      <select id="signedInSelect" onchange="displaySignedInUserDetails()">
+          <option value="">Select a User</option>`;
+
+      signedInTodayUsers.forEach(user => {
+          signedInDropdown += `<option value="${user.username}">${user.username}</option>`;
+      });
+
+      signedInDropdown += `</select>`;
+
+      document.getElementById("userStats").innerHTML = statsHtml;
+      document.getElementById("userDetails").innerHTML = userDetails;
+      document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
+  } else {
+      document.getElementById("userDetails").innerHTML = "";
+      document.getElementById("signedInDropdown").innerHTML = "";
+  }
 }
+
+// Function to display details for the selected signed-in user
+function displaySignedInUserDetails() {
+  let selectedSignedInUser = document.getElementById("signedInSelect").value;
+  if (selectedSignedInUser) {
+      let user = users[selectedSignedInUser];
+
+      let formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+      });
+
+      let signedInUserDetails = `
+      <h3>Signed In User Details</h3>
+      <strong>Username:</strong> ${user.username} <br>
+      <strong>First Name:</strong> ${user.firstName} <br>
+      <strong>Last Name:</strong> ${user.lastName} <br>
+      <strong>Email:</strong> ${user.email} <br>
+      <strong>Membership:</strong> ${user.membership} <br>
+      <strong>Sign In Date:</strong> ${formattedSignInDate} <br>
+      <strong>isSignedIn:</strong> ${user.isSignedIn} <br>
+      `;
+
+      document.getElementById("signedInUserDetails").innerHTML = signedInUserDetails;
+  } else {
+      document.getElementById("signedInUserDetails").innerHTML = "";
+  }
 }
+
+
 
 
 function editUser(username) {
@@ -201,7 +268,6 @@ async function bookCourt() {
   const court = document.getElementById("courtSelection").value;
   let enteredPlayers = [];
 
-  // Fetch user data BEFORE proceeding with the booking logic
   let users = {};
   try {
     const response = await fetch("/users");
@@ -219,7 +285,6 @@ async function bookCourt() {
     return;
   }
 
-  // Track all currently booked players
   const allBookedPlayers = Object.values(courts).flatMap((court) => court.currentPlayers);
 
   for (let i = 1; i <= 4; i++) {
@@ -227,11 +292,9 @@ async function bookCourt() {
     const password = document.getElementById(`bookingPassword${i}`).value;
 
     if (username && password) {
-      // Validate user via API
       const isValid = await validateUser(username, password);
       if (!isValid) return;
 
-      // Check if user is already booked
       if (allBookedPlayers.includes(users[username])) {
         Swal.fire({
           icon: "error",
@@ -240,8 +303,7 @@ async function bookCourt() {
         return;
       }
 
-      // Replace username with full name
-      const fullName = users[username] || username; // Fallback to username if full name is unavailable
+      const fullName = users[username] || username; 
       enteredPlayers.push(fullName);
     }
   }
@@ -254,18 +316,17 @@ async function bookCourt() {
     return;
   }
 
-  // Handle court booking logic
   if (courts[court].currentPlayers.length === 0) {
     courts[court].currentPlayers = enteredPlayers;
-    courts[court].timeLeft = 20;
+    courts[court].timeLeft = 150;
     startCountdown(court);
   } else {
-    if (courts[court].queue.length < 5) {
+    if (courts[court].queue.length < 3) {
       courts[court].queue.push(enteredPlayers);
     } else {
       Swal.fire({
         icon: "error",
-        title: "Queue is full. Maximum 5 groups allowed.",
+        title: "Queue is full. Maximum 3 groups allowed.",
       });
       return;
     }
@@ -282,7 +343,6 @@ async function unbookCourt() {
   const court = document.getElementById("courtSelection").value;
   let enteredPlayers = [];
 
-  // Fetch user data BEFORE proceeding with the unbooking logic
   let users = {};
   try {
     const response = await fetch("/users");
@@ -300,7 +360,6 @@ async function unbookCourt() {
     return;
   }
 
-  // Track all currently booked players (with full names)
   const allBookedPlayers = Object.values(courts).flatMap((court) => court.currentPlayers);
 
   for (let i = 1; i <= 4; i++) {
@@ -308,14 +367,11 @@ async function unbookCourt() {
     const password = document.getElementById(`unbookingPassword${i}`).value;
 
     if (username && password) {
-      // Validate user via API
       const isValid = await validateUser(username, password);
       if (!isValid) return;
 
-      // Replace username with full name
-      const fullName = users[username] || username; // Fallback to username if full name is unavailable
+      const fullName = users[username] || username; 
 
-      // Check if the user is part of the current booking
       if (!allBookedPlayers.includes(fullName)) {
         Swal.fire({
           icon: "error",
@@ -328,7 +384,6 @@ async function unbookCourt() {
     }
   }
 
-  // Ensure exactly 2 or 4 players are unbooked
   if (enteredPlayers.length !== 2 && enteredPlayers.length !== 4) {
     Swal.fire({
       icon: "error",
@@ -337,11 +392,9 @@ async function unbookCourt() {
     return;
   }
 
-  // Handle unbooking logic
   const courtBooking = courts[court];
   const currentPlayers = courtBooking.currentPlayers;
 
-  // Check if the court has the players entered
   const playersToUnbook = enteredPlayers.filter((player) =>
     currentPlayers.includes(player)
   );
@@ -354,21 +407,18 @@ async function unbookCourt() {
     return;
   }
 
-  // Remove players from the current booking
   courtBooking.currentPlayers = currentPlayers.filter(
     (player) => !playersToUnbook.includes(player)
   );
 
-  // If no players are left, reset the court
   if (courtBooking.currentPlayers.length === 0) {
     courtBooking.timeLeft = 0;
   }
 
-  // Move the next group from the queue if the court is empty
   if (courtBooking.currentPlayers.length === 0 && courtBooking.queue.length > 0) {
-    const nextQueue = courtBooking.queue.shift(); // Move first queued group to the court
+    const nextQueue = courtBooking.queue.shift(); 
     courtBooking.currentPlayers = nextQueue;
-    courtBooking.timeLeft = 20;
+    courtBooking.timeLeft = 150;
     startCountdown(court);
   }
 
@@ -376,17 +426,12 @@ async function unbookCourt() {
   clearBookingFields();
   renderCourts();
 
-  // Success modal after unbooking
   Swal.fire({
     icon: "success",
     title: "Court Unbooked Successfully",
     text: `Players ${enteredPlayers.join(", ")} have been successfully unbooked from the court.`,
   });
 }
-
-
-
-
 
 
 function saveCourtData() {
@@ -397,31 +442,29 @@ function saveCourtData() {
   });
 }
 
-// Load courts data from the server
+
 function loadCourtData() {
-  fetch("/courts") // Fetch court data from the server
+  fetch("/courts") 
     .then((response) => response.json())
     .then((data) => {
-      courts = data; // Set the global `courts` variable to the fetched data
+      courts = data; 
 
-      // Check if any court has players, and start a countdown if needed
       Object.keys(courts).forEach((court) => {
         if (
           courts[court].currentPlayers.length > 0 &&
           courts[court].timeLeft > 0
         ) {
-          startCountdown(court); // Start countdown if players are booked
+          startCountdown(court); 
         }
       });
 
-      renderCourts(); // Re-render the courts with updated data
+      renderCourts(); 
     })
     .catch((err) => console.error("Error fetching courts:", err));
 }
 
 window.onload = function () {
   loadCourtData();
-  saveCourtData();
 };
 
 function startCountdown(court) {
@@ -434,7 +477,7 @@ function startCountdown(court) {
       courts[court].currentPlayers = [];
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].timeLeft = 20;
+        courts[court].timeLeft = 150;
         startCountdown(court);
       }
       renderCourts();
@@ -452,63 +495,65 @@ function clearBookingFields() {
 }
 
 function renderCourts() {
-    let courtDisplay = "";
-    let courtCount = 1;
+  let firstRow = "";
+  let middleRow = "";
+  let lastRow = "";
+  let courtCount = 1;
+
+  const isAdminPage = window.location.pathname.includes("admin.html"); // Check if it's the admin page
+
+  const courtEntries = Object.entries(courts);
   
-    const isAdminPage = window.location.pathname.includes("admin.html"); // Check if it's the admin page
-    
-    for (const [court, details] of Object.entries(courts)) {
+  courtEntries.forEach(([court, details], index) => {
       let minutes = Math.floor(details.timeLeft / 60);
       let seconds = details.timeLeft % 60;
-  
-      // Check if it's Court 10 and apply the 'unavailable' class and status
-      let courtStatusClass =
-        details.currentPlayers.length === 0 ? "open" : "closed";
       
+      let courtStatusClass = details.currentPlayers.length === 0 ? "open" : "closed";
       if (court === "Court 10") {
-        courtStatusClass += " unavailable"; // Add 'unavailable' class for Court 10
+          courtStatusClass += " unavailable"; // Mark Court 10 as unavailable
       }
-  
-      courtDisplay += `<div class="court-card ${courtStatusClass}">`;
+
+      let courtDisplay = `<div class="court-card ${courtStatusClass}">`;
       courtDisplay += `<h3>${court}</h3>`;
-      
-      // Change status text to "Unavailable" if it's Court 10
+
       const statusText = court === "Court 10" ? "Unavailable" : (details.currentPlayers.length === 0 ? "Open" : "Closed");
       courtDisplay += `<p class="status">${statusText}</p>`;
-  
+
       if (courtStatusClass === "closed") {
-        courtDisplay += `<p>Time Left: ${minutes}:${seconds
-          .toString()
-          .padStart(2, "0")}</p>`;
+          courtDisplay += `<p>Time Left: ${minutes}:${seconds.toString().padStart(2, "0")}</p>`;
       }
-  
-      courtDisplay += `<p>Current Players: ${
-        details.currentPlayers.join(", ") || "None"
-      }</p>`;
-  
-      details.currentPlayers.forEach((player, index) => {
-        // Conditionally show the Remove button based on page URL
-        courtDisplay += `<p>Player ${
-          index + 1
-        }: ${player} ${isAdminPage ? `<button onclick="removePlayer(${
-          index + 1
-        })">Remove</button>` : ""}</p>`;
-      });
-  
-      for (let i = 0; i < 3; i++) {
-        courtDisplay += `<p>Queue ${i + 1}: ${
-          details.queue[i] ? details.queue[i].join(", ") : "Empty"
-        }</p>`;
-      }
-  
-      courtDisplay += `</div>`;
-  
-      courtCount++;
+
+      courtDisplay += `<p>Current Players: ${details.currentPlayers.join(", ") || "None"}</p>`;
+
+      if (isAdminPage) {
+        details.currentPlayers.forEach((player, index) => {
+            courtDisplay += `<p>Player ${index + 1}: ${player} <button onclick="removePlayer(${index + 1})">Remove</button></p>`;
+        });
     }
-  
-    document.getElementById("courtStatus").innerHTML = courtDisplay;
-  }
-  
+    
+
+      for (let i = 0; i < 3; i++) {
+          courtDisplay += `<p>Queue ${i + 1}: ${details.queue[i] ? details.queue[i].join(", ") : "Empty"}</p>`;
+      }
+
+      courtDisplay += `</div>`;
+
+      if (index < 3) {
+          firstRow += courtDisplay;
+      } else if (index < 7) {
+          middleRow += courtDisplay;
+      } else {
+          lastRow += courtDisplay;
+      }
+  });
+
+  document.getElementById("courtStatus").innerHTML = `
+      <div class="row first-row">${firstRow}</div>
+      <div class="row middle-row">${middleRow}</div>
+      <div class="row last-row">${lastRow}</div>
+  `;
+}
+
   
   function removePlayer(playerIndex) {
     const court = document.getElementById("courtSelection").value;

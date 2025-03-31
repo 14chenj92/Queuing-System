@@ -8,9 +8,18 @@
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+    <!-- <h1>Admin Login Requests</h1>
+    <div id="pendingLogins"></div> -->
     <h2>All Registered Users</h2>
     <div id="userList"></div>
+    <div class="userInfo">
+    <div class="userLeft">
     <div id="userDetails"></div>
+    <div id="signedInDropdown"></div> 
+<div id="signedInUserDetails"></div>  
+</div>
+    <div id="userStats"></div>
+</div>
     <select id="courtSelection">
         <option value="Court 1">Court 1</option>
         <option value="Court 2">Court 2</option>
@@ -22,15 +31,83 @@
         <option value="Court 8">Court 8</option>
         <option value="Court 9">Court 9</option>
         <option value="Court 10">Court 10</option>
-      </select>
+    </select>
     <h2>Court Status</h2>
     <div id="courtStatus" class="court-container"></div>
     <script src="function.js"></script>
-    <script>
-        showUsers();
-        renderCourts();
-    </script>
     <script src="script.js"></script>
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        setInterval(async () => {
+            const response = await fetch("/admin/pending");
+            const pendingLogins = await response.json();
+    
+            console.log("Pending Logins:", pendingLogins);
+    
+            if (pendingLogins.length > 0) {
+                const login = pendingLogins[0];  
+                console.log("Login to approve/deny:", login);  
+    
+                const result = await Swal.fire({
+                    title: `New login request from ${login.username}`,
+                    text: `Do you want to approve or deny this login request?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Approve',
+                    cancelButtonText: 'Deny'
+                });
+    
+                console.log(result);
+    
+                if (result.isConfirmed) {
+                    approveLogin(login.username);
+                } else {
+                    denyLogin(login.username);
+                }
+            }
+        }, 4000); 
+    
+        // Approve user login
+        async function approveLogin(username) {
+            console.log("Approving login for:", username);  
+    
+            const response = await fetch("/admin/approve", {
+                method: "POST",
+                body: JSON.stringify({ username }),
+                headers: { "Content-Type": "application/json" }
+            });
+    
+            const result = await response.json();
+            console.log("Approve Response:", result);  
+    
+            if (result.status === "approved") {
+                Swal.fire('Approved!', 'The user login has been approved.', 'success');
+            }
+        }
+    
+        // Deny user login
+        async function denyLogin(username) {
+            console.log("Denying login for:", username);  
+    
+            const response = await fetch("/admin/deny", {
+                method: "POST",
+                body: JSON.stringify({ username }),
+                headers: { "Content-Type": "application/json" }
+            });
+    
+            const result = await response.json();
+            console.log("Deny Response:", result);  
+    
+            if (result.status === "denied") {
+                Swal.fire('Denied!', 'The user login has been denied.', 'error');
+            }
+        }
+    </script>
+        <script>
+                showUsers();
+                renderCourts()
+                </script>
 </body>
 </html>

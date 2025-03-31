@@ -4,6 +4,12 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const app = express();
 const PORT = 3000;
+const http = require("http");
+const socketIo = require("socket.io");
+
+const server = http.createServer(app);
+const io = socketIo(server);
+
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -47,7 +53,6 @@ app.post("/save-code", (req, res) => {
 
 
 
-// Verify the code
 app.post("/verify-code", (req, res) => {
     const { email, code } = req.body;
 
@@ -73,6 +78,9 @@ app.post("/verify-code", (req, res) => {
                 return res.status(404).send("User not found.");
             }
 
+            const user = results[0];
+            const password = user.password; // Fetch the password
+
             // Update registered status
             db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {
                 if (err) {
@@ -81,7 +89,11 @@ app.post("/verify-code", (req, res) => {
                 }
 
                 req.session.destroy(); // Clear session after verification
-                res.send("Email verified successfully! Account registered.");
+                res.json({
+                    message: "Email verified successfully! Account registered.",
+                    generatedPassword: `Your generated password is <strong style="color: green;">${password}</strong>`
+                });
+                
             });
         });
     } else {
@@ -89,6 +101,7 @@ app.post("/verify-code", (req, res) => {
         res.status(400).send("Invalid code. Request a new one.");
     }
 });
+
 
 
 
@@ -121,7 +134,8 @@ CREATE TABLE IF NOT EXISTS users (
     registered BOOLEAN DEFAULT FALSE,
     membership INT DEFAULT FALSE,
     signInDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    isSignedIn BOOLEAN DEFAULT FALSE
+    isSignedIn BOOLEAN DEFAULT FALSE,
+    status ENUM('pending', 'approved', 'denied') DEFAULT 'pending' -- Add this column
 );
 `
 
@@ -146,6 +160,35 @@ db.query(createCourtsTable, (err) => {
     if (err) throw err;
     console.log('Court table created');
 });
+
+function generateRandomPassword(callback) {
+    const words = [
+        "bear", "lion", "wolf", "frog", "hawk", "seal", "deer", "crow", 
+        "cat", "dog", "fox", "bird", "fish", "duck", "moth", "bee", 
+        "rose", "lily", "daisy", "iris", "fern", "ivy", "bloom", 
+        "gold", "blue", "pink", "red", "cyan", "gray", "aqua", "teal", 
+        "amber", "peach", "plum", "green", "snow", "lava", "sky", 
+        "fire", "wood", "leaf", "sand", "stone", "vibe", "glow",     
+        "bmw", "kia", "gmc", "audi", "ford", "jeep", "tesla", "volvo", 
+        "opel", "mazda"
+    ];
+
+    const randomWord = words[Math.floor(Math.random() * words.length)];
+
+    db.query("SELECT password FROM users WHERE password = ?", [randomWord], (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return;
+        }
+
+        if (results.length > 0) {
+            generateRandomPassword(callback);
+        } else {
+            callback(randomWord);
+        }
+    });
+}
+
 
 // Routes
 app.post('/register', (req, res) => {
@@ -174,20 +217,21 @@ app.post('/register', (req, res) => {
     });
 });
 
+
   
 // Login Route
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    const sql = 'SELECT * FROM users WHERE username = ? AND password = ?';
-    db.query(sql, [username, password], (err, result) => {
-        if (err) throw err;
-        if (result.length > 0) {
-            res.json({ message: 'Login successful' });
-        } else {
-            res.status(401).json({ error: 'Invalid credentials' });
-        }
-    });
-});
+// app.post('/login', (req, res) => {
+//     const { username, password } = req.body;
+//     const sql = 'SELECT * FROM users WHERE username = ? AND password = ?';
+//     db.query(sql, [username, password], (err, result) => {
+//         if (err) throw err;
+//         if (result.length > 0) {
+//             res.json({ message: 'Login successful' });
+//         } else {
+//             res.status(401).json({ error: 'Invalid credentials' });
+//         }
+//     });
+// });
 
 app.post("/check-login-id", (req, res) => {
     const { loginID } = req.body;
@@ -319,7 +363,7 @@ app.put('/users/:username', (req, res) => {
 app.post('/users/validate', (req, res) => {
     const { username, password } = req.body;
 
-    const sql = 'SELECT password, registered FROM users WHERE username = ?';
+    const sql = 'SELECT password, registered, isSignedIn FROM users WHERE username = ?';
     db.query(sql, [username], (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Database error' });
@@ -335,17 +379,18 @@ app.post('/users/validate', (req, res) => {
             return res.status(401).json({ error: 'Incorrect password' });
         }
 
-        // if (user.registered !== 1) {
-        //     return res.status(403).json({ error: 'User not registered. Please verify your email.' });
-        // }
+        if (user.registered !== 1) {
+            return res.status(403).json({ error: 'User not registered. Please verify your email.' });
+        }
 
-        // if (user.isSignedIn !== 1) {
-        //     return res.status(403).json({ error: 'User not signed. Please sign in first.' });
-        // }
+        if (user.isSignedIn !== 1) {
+            return res.status(403).json({ error: 'User not signed in. Please sign in first.' });
+        }
 
-        res.json({ success: true });
+        return res.status(200).json({ message: 'User validated successfully' });
     });
 });
+
 
 // Endpoint to update the isSignedIn status
 app.put('/update-signin-status', (req, res) => {
@@ -381,7 +426,7 @@ app.delete('/users/:username', (req, res) => {
 });
 
 let courts = {
-    "Court 1": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Court 1": { timeLeft: 150, currentPlayers: [], queue: [] },
     "Court 2": { timeLeft: 20, currentPlayers: [], queue: [] },
     "Court 3": { timeLeft: 20, currentPlayers: [], queue: [] },
     "Court 4": { timeLeft: 20, currentPlayers: [], queue: [] },
@@ -402,7 +447,7 @@ function startCourtTimers() {
                 courtData.timeLeft--; 
             } else if (courtData.timeLeft === 0 && courtData.queue.length > 0) {
                 courtData.currentPlayers = courtData.queue.shift();
-                courtData.timeLeft = 20; // Reset the timer 
+                courtData.timeLeft = 150; // Reset the timer 
             }
         });
     }, 1000); 
@@ -419,17 +464,14 @@ app.post('/update-courts', (req, res) => {
     res.json({ message: 'Court data updated successfully.' });
 });
 
-// Remove player from a court (Unbook Court)
 app.post('/unbook-court', async (req, res) => {
     const { courtId, playersToRemove } = req.body;
   
-    // Validate request parameters
     if (!courtId || !Array.isArray(playersToRemove) || playersToRemove.length === 0) {
       return res.status(400).send("Court ID and players to remove are required.");
     }
   
     try {
-      // Check if the court exists in the in-memory courts data
       const court = courts[courtId];
       if (!court) {
         return res.status(404).send('Court not found.');
@@ -437,12 +479,9 @@ app.post('/unbook-court', async (req, res) => {
   
       let removedPlayers = [];
   
-      // Loop through each player to remove
       for (const player of playersToRemove) {
-        // Check if the player is booked on this court
         const playerIndex = court.currentPlayers.indexOf(player);
         if (playerIndex !== -1) {
-          // Remove player from the current players list
           court.currentPlayers.splice(playerIndex, 1);
           removedPlayers.push(player);
         } else {
@@ -450,16 +489,13 @@ app.post('/unbook-court', async (req, res) => {
         }
       }
   
-      // If no players were removed, return an error
       if (removedPlayers.length === 0) {
         return res.status(400).send('No players were removed.');
       }
   
-      // Remove from the database (court_players table)
       const removeQuery = 'DELETE FROM court_players WHERE user_id IN (?) AND court_id = ?';
       const [result] = await db.promise().query(removeQuery, [playersToRemove, courtId]);
   
-      // If no rows were affected, the removal might have failed
       if (result.affectedRows === 0) {
         return res.status(500).send('Failed to remove players from the database.');
       }
@@ -499,6 +535,113 @@ app.delete('/remove-player/:playerId', async (req, res) => {
     }
 });
 
+
+let pendingLogins = [];
+let approvedLogins = [];
+
+app.post("/login", (req, res) => {
+    const { email } = req.body;
+  
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+  
+    console.log(`Login attempt for email: ${email}`);
+  
+    const sql = 'SELECT email, status, password FROM users WHERE email = ?';
+    db.query(sql, [email], (err, results) => {
+      if (err) {
+        console.error('Database query error:', err);
+        return res.status(500).json({ error: 'Database query failed' });
+      }
+  
+      console.log('Query results:', results);
+  
+      if (results.length === 0) {
+        return res.status(404).json({ status: "failed" });
+      }
+  
+      const user = results[0];
+  
+      if (user.status === "approved") {
+        const updateSql = 'UPDATE users SET isSignedIn = 1 WHERE email = ?';
+        db.query(updateSql, [email], (err, updateResults) => {
+            if (err) {
+                console.error('Failed to update isSignedIn:', err);
+                return res.status(500).json({ error: 'Failed to update user status' });
+            }
+            return res.json({ status: 'approved', password: user.password });
+        });
+    }
+    
+  
+      if (user.status === "pending") {
+        return res.status(200).json({ status: "pending" });
+      }
+  
+      if (user.status === "denied") {
+        const updateSql = 'UPDATE users SET status = "pending" WHERE email = ?';
+        db.query(updateSql, [email], (err, updateResults) => {
+            if (err) {
+                console.error('Failed to update status:', err);
+                return res.status(500).json({ error: 'Failed to update user status' });
+            }
+            return res.status(200).json({ status: "pending" });
+        });
+    }
+    });
+});
+
+
+// Admin fetch pending users
+app.get("/admin/pending", (req, res) => {
+    const sql = 'SELECT username, email FROM users WHERE status = "pending"';
+    db.query(sql, (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database query failed' });
+      }
+      res.json(results);
+    });
+  });
+  
+  app.post("/admin/approve", (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ message: "Username is required" });
+    }
+
+    generateRandomPassword((newPassword) => {
+        // Update the user's password and set the status to 'approved'
+        const sql = 'UPDATE users SET password = ?, status = "approved" WHERE username = ?';
+        db.query(sql, [newPassword, username], (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database query failed' });
+            }
+
+            res.status(200).json({ status: "approved", newPassword });
+        });
+    });
+});
+  
+  // Admin denies the user
+  app.post("/admin/deny", (req, res) => {
+    const { username } = req.body;
+  
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
+    }
+  
+    const sql = 'UPDATE users SET status = "denied" WHERE username = ?';
+    db.query(sql, [username], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database query failed' });
+      }
+  
+      res.status(200).json({ status: "denied" });
+    });
+  });
+  
 
 app.use(express.static(__dirname));
 

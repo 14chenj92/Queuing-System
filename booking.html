@@ -9,6 +9,9 @@
 </head>
 <body>
   <button onclick="goToHome()" class="back-button">⬅ Back </button>
+  <h2>Court Status</h2>
+  <div id="courtStatus" class="court-container"></div>
+  
   <h2>Badminton Court Booking</h2>
   <label>Select Court:</label>
   <select id="courtSelection">
@@ -77,8 +80,6 @@
   
   <button onclick="unbookCourt()">Unbook Court</button>
 
-  <h2>Court Status</h2>
-  <div id="courtStatus" class="court-container"></div>
   <script src="function.js"></script>
   <script>
     renderCourts();
