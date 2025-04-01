@@ -91,7 +91,7 @@ app.post("/verify-code", (req, res) => {
                 req.session.destroy(); // Clear session after verification
                 res.json({
                     message: "Email verified successfully! Account registered.",
-                    generatedPassword: `Your generated password is <strong style="color: green;">${password}</strong>`
+                    generatedPassword: `Email verified successfully! Account registered.`
                 });
                 
             });
