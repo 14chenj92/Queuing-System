@@ -21,6 +21,7 @@ const session = require("express-session");
 
 const cors = require("cors");
 
+
 // Middleware
 app.use(express.json());
 app.use(cors({
@@ -30,7 +31,7 @@ app.use(cors({
 
 app.use(
     session({
-        secret: "your_secret_key", // Use a strong secret key
+        secret: process.env.SESSION_SECRET, // Use a strong secret key
         resave: false,
         saveUninitialized: false,
         cookie: {
@@ -66,6 +67,7 @@ app.post("/save-code", (req, res) => {
 
 app.post("/verify-code", (req, res) => {
     const { email, code } = req.body;
+    console.log("Session data during verification:", req.session);
 
     // Ensure session data exists
     if (!req.session.verificationCode || !req.session.email) {
