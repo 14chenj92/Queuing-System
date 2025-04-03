@@ -122,15 +122,32 @@ app.post("/verify-code", (req, res) => {
 //     database: 'users_db' 
 // });
 
-const db = mysql.createPool({
-    host: process.env.DB_HOST, 
-    user: process.env.DB_USER, 
-    password: process.env.DB_PASSWORD, 
+
+let db;
+
+if (process.env.JAWSDB_URL) {
+  // If JawsDB URL is set (used on Heroku)
+  db = mysql.createConnection(process.env.JAWSDB_URL);
+} else {
+  // Local development fallback (for testing)
+  db = mysql.createConnection({
+    host: 'localhost',  // Localhost for local dev, should be different in production
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    port: 3306
+  });
+}
+
+// Connecting to the database
+db.connect((err) => {
+  if (err) {
+    console.error('Error connecting to the database:', err.stack);
+    return;
+  }
+  console.log('Connected to the database with ID:', db.threadId);
 });
+
 
 // Alternatively, if you want to pass individual credentials, do the following:
 // const db = mysql.createConnection({
