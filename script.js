@@ -48,10 +48,9 @@ function verifyCode(event) {
             confirmButtonText: "OK"
         }).then((result) => {
             if (data.message.includes("success")) {
-                // Redirect after 3 seconds
                 setTimeout(() => {
                     window.location.href = "main.html";
-                }, 2000);
+                }, 1000);
             }
         });
     })   
