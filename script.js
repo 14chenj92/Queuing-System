@@ -37,7 +37,8 @@ function verifyCode(event) {
     fetch("/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, code: enteredCode }) 
+        body: JSON.stringify({ email: email, code: enteredCode }),
+        credentials: 'include' 
     })
     .then(response => response.json()) 
     .then(data => {
