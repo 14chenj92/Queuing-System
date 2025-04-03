@@ -67,7 +67,8 @@ app.post("/save-code", (req, res) => {
 
 app.post("/verify-code", (req, res) => {
     const { email, code } = req.body;
-    console.log("Session data during verification:", req.session);
+    console.log("Verification code in session:", req.session.verificationCode);
+    console.log("Email in session:", req.session.email);
 
     // Ensure session data exists
     if (!req.session.verificationCode || !req.session.email) {
