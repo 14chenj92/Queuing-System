@@ -121,15 +121,17 @@ app.post("/verify-code", (req, res) => {
 //     database: 'users_db' 
 // });
 
-const db = mysql.createPool({
-    host: process.env.DB_HOST, 
-    user: process.env.DB_USER, 
-    password: process.env.DB_PASS, 
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
+// const db = mysql.createPool({
+//     host: process.env.DB_HOST, 
+//     user: process.env.DB_USER, 
+//     password: process.env.DB_PASS, 
+//     database: process.env.DB_NAME,
+//     waitForConnections: true,
+//     connectionLimit: 10,
+//     queueLimit: 0
+// });
+
+const db = mysql.createConnection(process.env.JAWSDB_URL);
 
 db.getConnection((err, connection) => {
     if (err) {
