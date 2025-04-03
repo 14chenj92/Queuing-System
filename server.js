@@ -9,6 +9,8 @@ const socketIo = require("socket.io");
 
 const server = http.createServer(app);
 const io = socketIo(server);
+require('dotenv').config();
+
 
 
 app.use(bodyParser.json());
@@ -21,15 +23,20 @@ const cors = require("cors");
 // Middleware
 app.use(express.json());
 app.use(cors({
-    origin: "http://localhost:3000", 
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true
 }));
 
 app.use(session({
-    secret: "your-secret-key",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 5 * 60 * 1000 } 
+    cookie: { 
+        maxAge: 5 * 60 * 1000, 
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "strict"
+    }
 }));
 
 app.get("/", (req, res) => {
@@ -107,12 +114,32 @@ app.post("/verify-code", (req, res) => {
 
 
 // Database Connection
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root', 
-    password: 'root', 
-    database: 'users_db' 
+// const db = mysql.createConnection({
+//     host: 'localhost',
+//     user: 'root', 
+//     password: 'root', 
+//     database: 'users_db' 
+// });
+
+const db = mysql.createPool({
+    host: process.env.DB_HOST, 
+    user: process.env.DB_USER, 
+    password: process.env.DB_PASS, 
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
+
+db.getConnection((err, connection) => {
+    if (err) {
+        console.error('Database connection error:', err);
+        return;
+    }
+    console.log('Connected to MySQL database');
+    connection.release(); // Release the connection
+});
+
 
 db.connect((err) => {
     if (err) {
