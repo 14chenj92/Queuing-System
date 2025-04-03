@@ -3,9 +3,10 @@ const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const http = require("http");
 const socketIo = require("socket.io");
+
 
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -121,26 +122,32 @@ app.post("/verify-code", (req, res) => {
 //     database: 'users_db' 
 // });
 
-// const db = mysql.createPool({
-//     host: process.env.DB_HOST, 
-//     user: process.env.DB_USER, 
-//     password: process.env.DB_PASS, 
-//     database: process.env.DB_NAME,
-//     waitForConnections: true,
-//     connectionLimit: 10,
-//     queueLimit: 0
+const db = mysql.createPool({
+    host: process.env.DB_HOST, 
+    user: process.env.DB_USER, 
+    password: process.env.DB_PASSWORD, 
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+// Alternatively, if you want to pass individual credentials, do the following:
+// const db = mysql.createConnection({
+//     host: 'ipobfcpvprjpmdo9.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
+//     user: 'root',
+//     password: 'root',
+//     database: 'users_db'
 // });
 
-const db = mysql.createConnection(process.env.JAWSDB_URL);
-
-db.getConnection((err, connection) => {
-    if (err) {
-        console.error('Database connection error:', err);
-        return;
-    }
-    console.log('Connected to MySQL database');
-    connection.release(); // Release the connection
-});
+// db.getConnection((err, connection) => {
+//     if (err) {
+//         console.error('Database connection error:', err);
+//         return;
+//     }
+//     console.log('Connected to MySQL database');
+//     connection.release(); 
+// });
 
 
 // User Table
