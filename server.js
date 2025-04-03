@@ -141,14 +141,6 @@ db.getConnection((err, connection) => {
 });
 
 
-db.connect((err) => {
-    if (err) {
-        console.error('Database connection error:', err);
-        return;
-    }
-    console.log('Connected to MySQL database');
-});
-
 // User Table
 const createUsersTable = `
 CREATE TABLE IF NOT EXISTS users (
