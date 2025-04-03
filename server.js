@@ -28,17 +28,20 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: { 
-        maxAge: 5 * 60 * 1000, 
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true,
-        sameSite: "strict"
-    }
-}));
+app.use(
+    session({
+        secret: "your_secret_key", // Use a strong secret key
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === "production", // Ensure cookies are secure on production
+            httpOnly: true, // Helps prevent XSS attacks
+            sameSite: "strict", // Helps prevent CSRF attacks
+        },
+    })
+);
+
+
 
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "main.html"));
