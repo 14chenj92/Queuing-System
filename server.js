@@ -35,9 +35,10 @@ app.use(
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: process.env.NODE_ENV === "production", // Ensure cookies are secure on production
+            secure: false, // Ensure cookies are secure on production
             httpOnly: true, // Helps prevent XSS attacks
-            sameSite: "strict", // Helps prevent CSRF attacks
+            sameSite: "strict", 
+            // Helps prevent CSRF attacks
         },
     })
 );
