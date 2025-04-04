@@ -477,8 +477,8 @@ app.delete('/users/:username', (req, res) => {
 });
 
 let courts = {
-    "Court 1": { timeLeft: 150, currentPlayers: [], queue: [] },
-    "Court 2": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Court 1": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Court 2": { timeLeft: 150, currentPlayers: [], queue: [] },
     "Court 3": { timeLeft: 20, currentPlayers: [], queue: [] },
     "Court 4": { timeLeft: 20, currentPlayers: [], queue: [] },
     "Court 5": { timeLeft: 20, currentPlayers: [], queue: [] },
@@ -498,7 +498,7 @@ function startCourtTimers() {
                 courtData.timeLeft--; 
             } else if (courtData.timeLeft === 0 && courtData.queue.length > 0) {
                 courtData.currentPlayers = courtData.queue.shift();
-                courtData.timeLeft = 150; // Reset the timer 
+                courtData.timeLeft = 20; // Reset the timer 
             }
         });
     }, 1000); 

@@ -363,7 +363,7 @@ async function bookCourt() {
 
   if (courts[court].currentPlayers.length === 0) {
     courts[court].currentPlayers = enteredPlayers;
-    courts[court].timeLeft = 150;
+    courts[court].timeLeft = 20;
     startCountdown(court);
   } else {
     if (courts[court].queue.length < 3) {
@@ -466,7 +466,7 @@ async function unbookCourt() {
   ) {
     const nextQueue = courtBooking.queue.shift();
     courtBooking.currentPlayers = nextQueue;
-    courtBooking.timeLeft = 150;
+    courtBooking.timeLeft = 20;
     startCountdown(court);
   }
 
@@ -496,17 +496,16 @@ function loadCourtData() {
     .then((response) => response.json())
     .then((data) => {
       courts = data;
-
+      saveCourtData();
+      renderCourts();
       Object.keys(courts).forEach((court) => {
         if (
           courts[court].currentPlayers.length > 0 &&
-          courts[court].timeLeft > 0
+          courts[court].timeLeft >= 0
         ) {
           startCountdown(court);
         }
       });
-
-      renderCourts();
     })
     .catch((err) => console.error("Error fetching courts:", err));
 }
@@ -525,7 +524,7 @@ function startCountdown(court) {
       courts[court].currentPlayers = [];
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].timeLeft = 150;
+        courts[court].timeLeft = 20;
         startCountdown(court);
       }
       renderCourts();
