@@ -9,10 +9,13 @@
 </head>
 <body>
   <button onclick="goToHome()" class="back-button">⬅ Back </button>
+  <div class="booking-area">
+  <div class="court-area">
   <h2>Court Status</h2>
   <div id="courtStatus" class="court-container"></div>
-  
-  <h2>Badminton Court Booking</h2>
+  </div>
+  <div class="player-area">
+  <!-- <h2>Badminton Court Booking</h2> -->
   <label>Select Court:</label>
   <select id="courtSelection">
     <option value="Court 1">Court 1</option>
@@ -79,7 +82,8 @@
   </div>
   
   <button onclick="unbookCourt()">Unbook Court</button>
-
+</div>
+</div>
   <script src="function.js"></script>
   <script>
     renderCourts();

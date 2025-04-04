@@ -33,59 +33,76 @@ function generatePassword() {
       if (data.message === "User registered successfully") {
         Swal.fire({
           title: "Success!",
-          html:  
-              "<br><br>Please check your email for a code to complete verification.",
+          html: "<br><br>Please check your email for a code to complete verification.",
           icon: "success",
-          confirmButtonText: "OK"
+          confirmButtonText: "OK",
         });
-      } 
-       else if (data.message === "Email already exists") {
+      } else if (data.message === "Email already exists") {
         Swal.fire({
           title: "Error!",
           text: "Email already exists. Please choose another email.",
           icon: "error",
-          confirmButtonText: "OK"
+          confirmButtonText: "OK",
         });
       }
-    }
-    )}
+    });
+}
 
 function showUsers() {
-fetch("/users")
-.then((response) => response.json())
-.then((data) => {
-users = {}; 
-let userDropdown = `<h3>Select a User</h3><select id="userSelect" onchange="displayUserDetails()">`;
-userDropdown += `<option value="">-- Select a User --</option>`;
+  fetch("/users")
+    .then((response) => response.json())
+    .then((data) => {
+      users = {};
 
-data.forEach((user) => {
-  users[user.username] = user; 
+      // Filter users signed in today
+      const today = new Date();
+      const signedInTodayUsers = data.filter((user) => {
+        const signInDate = new Date(user.signInDate);
+        return (
+          signInDate.getFullYear() === today.getFullYear() &&
+          signInDate.getMonth() === today.getMonth() &&
+          signInDate.getDate() === today.getDate()
+        );
+      });
 
-  userDropdown += `<option value="${user.username}">${user.username}</option>`;
-});
+      // Populate users object with only today's signed-in users
+      signedInTodayUsers.forEach((user) => {
+        users[user.username] = user;
+      });
 
-userDropdown += `</select>`;
-document.getElementById("userList").innerHTML = userDropdown;
-document.getElementById("userDetails").innerHTML = ""; 
-})
-.catch((err) => console.error("Error fetching users:", err));
+      let userDropdown = `<h3>Select a User</h3><select id="userSelect" onchange="displayUserDetails()">`;
+      userDropdown += `<option value="">-- Select a User --</option>`;
+
+      signedInTodayUsers.forEach((user) => {
+        userDropdown += `<option value="${user.username}">${user.username}</option>`;
+      });
+
+      userDropdown += `</select>`;
+
+      document.getElementById("userList").innerHTML = userDropdown;
+      document.getElementById("userDetails").innerHTML = "";
+    })
+    .catch((err) => console.error("Error fetching users:", err));
 }
 
 function displayUserDetails() {
   let selectedUser = document.getElementById("userSelect").value;
   if (selectedUser) {
-      let user = users[selectedUser];
+    let user = users[selectedUser];
 
-      let formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit"
-      });
+    let formattedSignInDate = new Date(user.signInDate).toLocaleString(
+      "en-US",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }
+    );
 
-      let userDetails = `
+    let userDetails = `
       <h3>User Details</h3>
       <strong>Username:</strong> ${user.username} <br>
       <strong>Password:</strong> ${user.password} <br>
@@ -100,134 +117,160 @@ function displayUserDetails() {
       <button onclick="deleteUser('${user.username}')">Delete</button>
       `;
 
-      let totalUsers = Object.keys(users).length;
-      let totalMemberships = Object.values(users).reduce((sum, user) => sum + user.membership, 0);
+    let today = new Date();
 
-      // Calculate total registered at any time
-      let totalRegisteredAtAnyTime = Object.values(users).length;
+    // Get users signed in today
+    let signedInTodayUsers = Object.values(users).filter((user) => {
+      let signInDate = new Date(user.signInDate);
+      return (
+        signInDate.getFullYear() === today.getFullYear() &&
+        signInDate.getMonth() === today.getMonth() &&
+        signInDate.getDate() === today.getDate()
+      );
+    });
 
-      // Get users signed in today
-      let today = new Date();
-      let signedInTodayUsers = Object.values(users).filter(user => {
-          let signInDate = new Date(user.signInDate);
-          return signInDate.getFullYear() === today.getFullYear() &&
-                 signInDate.getMonth() === today.getMonth() &&
-                 signInDate.getDate() === today.getDate();
-      });
+    let totalSignedInToday = signedInTodayUsers.length;
 
-      let totalSignedInToday = signedInTodayUsers.length;
+    // Users with membership signed in today (assuming membership > 0 is valid)
+    let signedInWithMembership = signedInTodayUsers.filter(
+      (user) => user.membership > 0
+    ).length;
 
-      let statsHtml = `
+    // Users without membership signed in today
+    let signedInWithoutMembership = totalSignedInToday - signedInWithMembership;
+
+    let statsHtml = `
       <h3>User Statistics</h3>
-      <strong>Total Users:</strong> ${totalUsers} <br>
-      <strong>Total Memberships:</strong> ${totalMemberships} <br>
-      <strong>Total Registered All Time:</strong> ${totalRegisteredAtAnyTime} <br>
-      <strong>Total Signed In Today:</strong> ${totalSignedInToday} <br>
+      <strong>Users Signed In Today:</strong> ${totalSignedInToday} <br>
+      <strong>With Membership:</strong> ${signedInWithMembership} <br>
+      <strong>Drop In:</strong> ${signedInWithoutMembership} <br>
       `;
 
-      // Create dropdown for users signed in today
-      let signedInDropdown = `<label for="signedInSelect"><h3>Users Signed In Today</h3></label>
+    // Create dropdown for users signed in today
+    let signedInDropdown = `<label for="signedInSelect"><h3>Users Signed In Today</h3></label>
       <select id="signedInSelect" onchange="displaySignedInUserDetails()">
           <option value="">Select a User</option>`;
 
-      signedInTodayUsers.forEach(user => {
-          signedInDropdown += `<option value="${user.username}">${user.username}</option>`;
-      });
+    signedInTodayUsers.forEach((user) => {
+      signedInDropdown += `<option value="${user.username}">${user.username}</option>`;
+    });
 
-      signedInDropdown += `</select>`;
+    signedInDropdown += `</select>`;
 
-      document.getElementById("userStats").innerHTML = statsHtml;
-      document.getElementById("userDetails").innerHTML = userDetails;
-      document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
+    document.getElementById("userStats").innerHTML = statsHtml;
+    document.getElementById("userDetails").innerHTML = userDetails;
+    document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
   } else {
-      document.getElementById("userDetails").innerHTML = "";
-      document.getElementById("signedInDropdown").innerHTML = "";
+    document.getElementById("userDetails").innerHTML = "";
+    document.getElementById("signedInDropdown").innerHTML = "";
   }
 }
 
-// Function to display details for the selected signed-in user
 function displaySignedInUserDetails() {
   let selectedSignedInUser = document.getElementById("signedInSelect").value;
   if (selectedSignedInUser) {
-      let user = users[selectedSignedInUser];
+    let user = users[selectedSignedInUser];
 
-      let formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit"
-      });
+    let formattedSignInDate = new Date(user.signInDate).toLocaleString(
+      "en-US",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }
+    );
 
-      let signedInUserDetails = `
+    let signedInUserDetails = `
       <h3>Signed In User Details</h3>
       <strong>Username:</strong> ${user.username} <br>
+      <strong>Password:</strong> ${user.password} <br>
       <strong>First Name:</strong> ${user.firstName} <br>
       <strong>Last Name:</strong> ${user.lastName} <br>
       <strong>Email:</strong> ${user.email} <br>
+      <strong>Registered:</strong> ${user.registered} <br>
       <strong>Membership:</strong> ${user.membership} <br>
       <strong>Sign In Date:</strong> ${formattedSignInDate} <br>
       <strong>isSignedIn:</strong> ${user.isSignedIn} <br>
+      <button onclick="editUser('${user.username}')">Edit</button>
+      <button onclick="deleteUser('${user.username}')">Delete</button>
       `;
 
-      document.getElementById("signedInUserDetails").innerHTML = signedInUserDetails;
+    document.getElementById("signedInUserDetails").innerHTML =
+      signedInUserDetails;
   } else {
-      document.getElementById("signedInUserDetails").innerHTML = "";
+    document.getElementById("signedInUserDetails").innerHTML = "";
   }
 }
 
-
-
-
 function editUser(username) {
-let newPassword = prompt(`Enter new password for ${username} (leave blank to keep unchanged):`);
-let newFirstName = prompt(`Enter new first name for ${username} (leave blank to keep unchanged):`);
-let newLastName = prompt(`Enter new last name for ${username} (leave blank to keep unchanged):`);
-let newEmail = prompt(`Enter new email for ${username} (leave blank to keep unchanged):`);
+  let newPassword = prompt(
+    `Enter new password for ${username} (leave blank to keep unchanged):`
+  );
+  let newFirstName = prompt(
+    `Enter new first name for ${username} (leave blank to keep unchanged):`
+  );
+  let newLastName = prompt(
+    `Enter new last name for ${username} (leave blank to keep unchanged):`
+  );
+  let newEmail = prompt(
+    `Enter new email for ${username} (leave blank to keep unchanged):`
+  );
 
-let newregistered = confirm(`Approve user ${username}? Click OK for Yes, Cancel for No.`) ? 1 : 0;
+  let newregistered = confirm(
+    `Approve user ${username}? Click OK for Yes, Cancel for No.`
+  )
+    ? 1
+    : 0;
 
-let newMembership = prompt(`Enter new membership for ${username} (leave blank to keep unchanged):`);
-let newSignInDate = prompt(`Enter new sign-in date for ${username} (leave blank to keep unchanged):`);
-let newIsSignedIn = confirm(`Is ${username} currently signed in? Click OK for Yes, Cancel for No.`) ? 1 : 0;
+  let newMembership = prompt(
+    `Enter new membership for ${username} (leave blank to keep unchanged):`
+  );
+  let newSignInDate = prompt(
+    `Enter new sign-in date for ${username} (leave blank to keep unchanged):`
+  );
+  let newIsSignedIn = confirm(
+    `Is ${username} currently signed in? Click OK for Yes, Cancel for No.`
+  )
+    ? 1
+    : 0;
 
-let updatedData = {};
+  let updatedData = {};
 
-if (newPassword) updatedData.password = newPassword;
-if (newFirstName) updatedData.firstName = newFirstName;
-if (newLastName) updatedData.lastName = newLastName;
-if (newEmail) updatedData.email = newEmail;
-if (newMembership) updatedData.membership = newMembership;
-if (newSignInDate) updatedData.signInDate = newSignInDate;
-updatedData.isSignedIn = newIsSignedIn;  
-updatedData.registered = newregistered; 
+  if (newPassword) updatedData.password = newPassword;
+  if (newFirstName) updatedData.firstName = newFirstName;
+  if (newLastName) updatedData.lastName = newLastName;
+  if (newEmail) updatedData.email = newEmail;
+  if (newMembership) updatedData.membership = newMembership;
+  if (newSignInDate) updatedData.signInDate = newSignInDate;
+  updatedData.isSignedIn = newIsSignedIn;
+  updatedData.registered = newregistered;
 
-if (Object.keys(updatedData).length === 0) {
-alert("No changes were made.");
-return;
+  if (Object.keys(updatedData).length === 0) {
+    alert("No changes were made.");
+    return;
+  }
+
+  fetch(`/users/${username}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updatedData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.error) {
+        alert(`Error: ${data.error}`);
+      } else {
+        alert(`User ${username} updated successfully!`);
+        showUsers();
+      }
+    })
+    .catch((err) => console.error("Error updating user:", err));
 }
-
-fetch(`/users/${username}`, {
-method: "PUT",
-headers: {
-"Content-Type": "application/json",
-},
-body: JSON.stringify(updatedData),
-})
-.then((response) => response.json())
-.then((data) => {
-if (data.error) {
-  alert(`Error: ${data.error}`);
-} else {
-  alert(`User ${username} updated successfully!`);
-  showUsers(); 
-}
-})
-.catch((err) => console.error("Error updating user:", err));
-}
-
-
 
 function deleteUser(username) {
   if (confirm(`Are you sure you want to delete ${username}?`)) {
@@ -237,7 +280,7 @@ function deleteUser(username) {
       .then((response) => response.json())
       .then(() => {
         alert(`${username} deleted`);
-        showUsers(); 
+        showUsers();
       })
       .catch((err) => console.error("Error deleting user:", err));
   }
@@ -285,7 +328,9 @@ async function bookCourt() {
     return;
   }
 
-  const allBookedPlayers = Object.values(courts).flatMap((court) => court.currentPlayers);
+  const allBookedPlayers = Object.values(courts).flatMap(
+    (court) => court.currentPlayers
+  );
 
   for (let i = 1; i <= 4; i++) {
     const username = document.getElementById(`bookingUsername${i}`).value;
@@ -303,7 +348,7 @@ async function bookCourt() {
         return;
       }
 
-      const fullName = users[username] || username; 
+      const fullName = users[username] || username;
       enteredPlayers.push(fullName);
     }
   }
@@ -337,8 +382,6 @@ async function bookCourt() {
   renderCourts();
 }
 
-
-
 async function unbookCourt() {
   const court = document.getElementById("courtSelection").value;
   let enteredPlayers = [];
@@ -360,7 +403,9 @@ async function unbookCourt() {
     return;
   }
 
-  const allBookedPlayers = Object.values(courts).flatMap((court) => court.currentPlayers);
+  const allBookedPlayers = Object.values(courts).flatMap(
+    (court) => court.currentPlayers
+  );
 
   for (let i = 1; i <= 4; i++) {
     const username = document.getElementById(`unbookingUsername${i}`).value;
@@ -370,7 +415,7 @@ async function unbookCourt() {
       const isValid = await validateUser(username, password);
       if (!isValid) return;
 
-      const fullName = users[username] || username; 
+      const fullName = users[username] || username;
 
       if (!allBookedPlayers.includes(fullName)) {
         Swal.fire({
@@ -415,8 +460,11 @@ async function unbookCourt() {
     courtBooking.timeLeft = 0;
   }
 
-  if (courtBooking.currentPlayers.length === 0 && courtBooking.queue.length > 0) {
-    const nextQueue = courtBooking.queue.shift(); 
+  if (
+    courtBooking.currentPlayers.length === 0 &&
+    courtBooking.queue.length > 0
+  ) {
+    const nextQueue = courtBooking.queue.shift();
     courtBooking.currentPlayers = nextQueue;
     courtBooking.timeLeft = 150;
     startCountdown(court);
@@ -429,10 +477,11 @@ async function unbookCourt() {
   Swal.fire({
     icon: "success",
     title: "Court Unbooked Successfully",
-    text: `Players ${enteredPlayers.join(", ")} have been successfully unbooked from the court.`,
+    text: `Players ${enteredPlayers.join(
+      ", "
+    )} have been successfully unbooked from the court.`,
   });
 }
-
 
 function saveCourtData() {
   fetch("/update-courts", {
@@ -442,23 +491,22 @@ function saveCourtData() {
   });
 }
 
-
 function loadCourtData() {
-  fetch("/courts") 
+  fetch("/courts")
     .then((response) => response.json())
     .then((data) => {
-      courts = data; 
+      courts = data;
 
       Object.keys(courts).forEach((court) => {
         if (
           courts[court].currentPlayers.length > 0 &&
           courts[court].timeLeft > 0
         ) {
-          startCountdown(court); 
+          startCountdown(court);
         }
       });
 
-      renderCourts(); 
+      renderCourts();
     })
     .catch((err) => console.error("Error fetching courts:", err));
 }
@@ -503,48 +551,63 @@ function renderCourts() {
   const isAdminPage = window.location.pathname.includes("admin.html"); // Check if it's the admin page
 
   const courtEntries = Object.entries(courts);
-  
+
   courtEntries.forEach(([court, details], index) => {
-      let minutes = Math.floor(details.timeLeft / 60);
-      let seconds = details.timeLeft % 60;
-      
-      let courtStatusClass = details.currentPlayers.length === 0 ? "open" : "closed";
-      if (court === "Court 10") {
-          courtStatusClass += " unavailable"; // Mark Court 10 as unavailable
-      }
+    let minutes = Math.floor(details.timeLeft / 60);
+    let seconds = details.timeLeft % 60;
 
-      let courtDisplay = `<div class="court-card ${courtStatusClass}">`;
-      courtDisplay += `<h3>${court}</h3>`;
-
-      const statusText = court === "Court 10" ? "Unavailable" : (details.currentPlayers.length === 0 ? "Open" : "Closed");
-      courtDisplay += `<p class="status">${statusText}</p>`;
-
-      if (courtStatusClass === "closed") {
-          courtDisplay += `<p>Time Left: ${minutes}:${seconds.toString().padStart(2, "0")}</p>`;
-      }
-
-      courtDisplay += `<p>Current Players: ${details.currentPlayers.join(", ") || "None"}</p>`;
-
-      if (isAdminPage) {
-        details.currentPlayers.forEach((player, index) => {
-            courtDisplay += `<p>Player ${index + 1}: ${player} <button onclick="removePlayer(${index + 1})">Remove</button></p>`;
-        });
+    let courtStatusClass =
+      details.currentPlayers.length === 0 ? "open" : "closed";
+    if (court === "Court 10") {
+      courtStatusClass += " unavailable"; // Mark Court 10 as unavailable
     }
-    
 
-      for (let i = 0; i < 3; i++) {
-          courtDisplay += `<p>Queue ${i + 1}: ${details.queue[i] ? details.queue[i].join(", ") : "Empty"}</p>`;
-      }
+    let courtDisplay = `<div class="court-card ${courtStatusClass}">`;
+    courtDisplay += `<h3>${court}</h3>`;
 
-      courtDisplay += `</div>`;
+    const statusText =
+      court === "Court 10"
+        ? "Unavailable"
+        : details.currentPlayers.length === 0
+        ? "Open"
+        : "Closed";
+    courtDisplay += `<p class="status">${statusText}</p>`;
 
-      if (index < 3) {
-          firstRow += courtDisplay;
-      } else if (index < 7) {
-          middleRow += courtDisplay;
-      } else {
-          lastRow += courtDisplay;
-      }
+    if (courtStatusClass === "closed") {
+      courtDisplay += `<p>Time Left: ${minutes}:${seconds
+        .toString()
+        .padStart(2, "0")}</p>`;
+    }
+
+    courtDisplay += `<p>Current Players: ${
+      details.currentPlayers.join(", ") || "None"
+    }</p>`;
+
+    if (isAdminPage) {
+      details.currentPlayers.forEach((player, index) => {
+        courtDisplay += `<p>Player ${
+          index + 1
+        }: ${player} <button onclick="removePlayer(${
+          index + 1
+        })">Remove</button></p>`;
+      });
+    }
+
+    for (let i = 0; i < 3; i++) {
+      courtDisplay += `<p>Queue ${i + 1}: ${
+        details.queue[i] ? details.queue[i].join(", ") : "Empty"
+      }</p>`;
+    }
+
+    courtDisplay += `</div>`;
+
+    if (index < 3) {
+      firstRow += courtDisplay;
+    } else if (index < 7) {
+      middleRow += courtDisplay;
+    } else {
+      lastRow += courtDisplay;
+    }
   });
 
   document.getElementById("courtStatus").innerHTML = `
@@ -554,29 +617,26 @@ function renderCourts() {
   `;
 }
 
-  
-  function removePlayer(playerIndex) {
-    const court = document.getElementById("courtSelection").value;
-    const playerName = courts[court].currentPlayers[playerIndex - 1];
-  
-    if (playerName) {
-      courts[court].currentPlayers.splice(playerIndex - 1, 1);  // Remove player from the list
-      Swal.fire({
-        icon: "success",
-        title: `${playerName} has been removed from ${court}`,
-      });
-  
-      // Update the courts data in local storage
-      localStorage.setItem("courtsData", JSON.stringify(courts));
-  
-      renderCourts();  // Re-render the courts to reflect the change in the UI
-      saveCourtData(); // Optionally save data to a backend or elsewhere
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: `Player not found.`,
-      });
-    }
+function removePlayer(playerIndex) {
+  const court = document.getElementById("courtSelection").value;
+  const playerName = courts[court].currentPlayers[playerIndex - 1];
+
+  if (playerName) {
+    courts[court].currentPlayers.splice(playerIndex - 1, 1); // Remove player from the list
+    Swal.fire({
+      icon: "success",
+      title: `${playerName} has been removed from ${court}`,
+    });
+
+    // Update the courts data in local storage
+    localStorage.setItem("courtsData", JSON.stringify(courts));
+
+    renderCourts(); // Re-render the courts to reflect the change in the UI
+    saveCourtData(); // Optionally save data to a backend or elsewhere
+  } else {
+    Swal.fire({
+      icon: "error",
+      title: `Player not found.`,
+    });
   }
-  
-  
+}

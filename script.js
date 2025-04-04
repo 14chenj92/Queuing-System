@@ -33,7 +33,7 @@ function verifyCode(event) {
 
     let enteredCode = document.getElementById("code").value;
     let email = document.getElementById("email").value; 
-
+    console.log(enteredCode, email)
     fetch("/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
