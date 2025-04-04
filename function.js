@@ -363,7 +363,7 @@ async function bookCourt() {
 
   if (courts[court].currentPlayers.length === 0) {
     courts[court].currentPlayers = enteredPlayers;
-    courts[court].timeLeft = 20;
+    courts[court].timeLeft = 30;
     startCountdown(court);
   } else {
     if (courts[court].queue.length < 3) {
@@ -466,7 +466,7 @@ async function unbookCourt() {
   ) {
     const nextQueue = courtBooking.queue.shift();
     courtBooking.currentPlayers = nextQueue;
-    courtBooking.timeLeft = 20;
+    courtBooking.timeLeft = 30;
     startCountdown(court);
   }
 
@@ -524,7 +524,7 @@ function startCountdown(court) {
       courts[court].currentPlayers = [];
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].timeLeft = 20;
+        courts[court].timeLeft = 30;
         startCountdown(court);
       }
       renderCourts();
@@ -557,15 +557,15 @@ function renderCourts() {
 
     let courtStatusClass =
       details.currentPlayers.length === 0 ? "open" : "closed";
-    if (court === "Court 10") {
-      courtStatusClass += " unavailable"; // Mark Court 10 as unavailable
+    if (court === "Las Vegas") {
+      courtStatusClass += " unavailable"; // Mark Las Vegas as unavailable
     }
 
     let courtDisplay = `<div class="court-card ${courtStatusClass}">`;
     courtDisplay += `<h3>${court}</h3>`;
 
     const statusText =
-      court === "Court 10"
+      court === "Las Vegas"
         ? "Unavailable"
         : details.currentPlayers.length === 0
         ? "Open"

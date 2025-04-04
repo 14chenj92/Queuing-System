@@ -477,16 +477,16 @@ app.delete('/users/:username', (req, res) => {
 });
 
 let courts = {
-    "Court 1": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 2": { timeLeft: 150, currentPlayers: [], queue: [] },
-    "Court 3": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 4": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 5": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 6": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 7": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 8": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 9": { timeLeft: 20, currentPlayers: [], queue: [] },
-    "Court 10": { timeLeft: 20, currentPlayers: [], queue: [] }
+    "Paris": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "London": { timeLeft: 200, currentPlayers: [], queue: [] },
+    "Berlin": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Tokyo": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "New Delhi": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Jakarta": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Beijing": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Toronto": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "New York": { timeLeft: 20, currentPlayers: [], queue: [] },
+    "Las Vegas": { timeLeft: 20, currentPlayers: [], queue: [] }
 };
 
 

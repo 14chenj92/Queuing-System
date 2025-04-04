@@ -148,7 +148,7 @@ h3 {
     justify-content: center; 
     align-items: center; 
     max-width: 300px;
-    width: 200px;
+    width: 220px;
     height: 200px;
     max-height: 400px;
 }
@@ -182,13 +182,13 @@ h3 {
 
 
 .court-card h3 {
-    font-size: 32px;
+    font-size: 26px;
     margin-bottom: 10px;
 }
 
 .court-card p {
     margin: 5px 0;
-    font-size: 18px;
+    font-size: 12px;
     font-family: var(--main-font)
 }
 
