@@ -50,40 +50,24 @@ function generatePassword() {
 
 function showUsers() {
   fetch("/users")
-    .then((response) => response.json())
-    .then((data) => {
-      users = {};
-
-      // Filter users signed in today
-      const today = new Date();
-      const signedInTodayUsers = data.filter((user) => {
-        const signInDate = new Date(user.signInDate);
-        return (
-          signInDate.getFullYear() === today.getFullYear() &&
-          signInDate.getMonth() === today.getMonth() &&
-          signInDate.getDate() === today.getDate()
-        );
-      });
-
-      // Populate users object with only today's signed-in users
-      signedInTodayUsers.forEach((user) => {
-        users[user.username] = user;
-      });
-
-      let userDropdown = `<h3>Select a User</h3><select id="userSelect" onchange="displayUserDetails()">`;
-      userDropdown += `<option value="">-- Select a User --</option>`;
-
-      signedInTodayUsers.forEach((user) => {
-        userDropdown += `<option value="${user.username}">${user.username}</option>`;
-      });
-
-      userDropdown += `</select>`;
-
-      document.getElementById("userList").innerHTML = userDropdown;
-      document.getElementById("userDetails").innerHTML = "";
-    })
-    .catch((err) => console.error("Error fetching users:", err));
-}
+  .then((response) => response.json())
+  .then((data) => {
+  users = {}; 
+  let userDropdown = `<h3>Select a User</h3><select id="userSelect" onchange="displayUserDetails()">`;
+  userDropdown += `<option value="">-- Select a User --</option>`;
+  
+  data.forEach((user) => {
+    users[user.username] = user; 
+  
+    userDropdown += `<option value="${user.username}">${user.username}</option>`;
+  });
+  
+  userDropdown += `</select>`;
+  document.getElementById("userList").innerHTML = userDropdown;
+  document.getElementById("userDetails").innerHTML = ""; 
+  })
+  .catch((err) => console.error("Error fetching users:", err));
+  }
 
 function displayUserDetails() {
   let selectedUser = document.getElementById("userSelect").value;
@@ -103,7 +87,7 @@ function displayUserDetails() {
     );
 
     let userDetails = `
-      <h3>User Details</h3>
+      <h3>User Details (Will be replaced after test)</h3>
       <strong>Username:</strong> ${user.username} <br>
       <strong>Password:</strong> ${user.password} <br>
       <strong>First Name:</strong> ${user.firstName} <br>
@@ -363,7 +347,7 @@ async function bookCourt() {
 
   if (courts[court].currentPlayers.length === 0) {
     courts[court].currentPlayers = enteredPlayers;
-    courts[court].timeLeft = 30;
+    courts[court].timeLeft = 600;
     startCountdown(court);
   } else {
     if (courts[court].queue.length < 3) {
@@ -466,7 +450,7 @@ async function unbookCourt() {
   ) {
     const nextQueue = courtBooking.queue.shift();
     courtBooking.currentPlayers = nextQueue;
-    courtBooking.timeLeft = 30;
+    courtBooking.timeLeft = 600;
     startCountdown(court);
   }
 
@@ -524,7 +508,7 @@ function startCountdown(court) {
       courts[court].currentPlayers = [];
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].timeLeft = 30;
+        courts[court].timeLeft = 600;
         startCountdown(court);
       }
       renderCourts();
