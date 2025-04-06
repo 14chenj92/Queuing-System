@@ -603,20 +603,32 @@ function renderCourts() {
 
 function removePlayer(playerIndex) {
   const court = document.getElementById("courtSelection").value;
-  const playerName = courts[court].currentPlayers[playerIndex - 1];
+  const courtData = courts[court];
+  const playerName = courtData.currentPlayers[playerIndex - 1];
 
   if (playerName) {
-    courts[court].currentPlayers.splice(playerIndex - 1, 1); // Remove player from the list
+    // Remove player from current players
+    courtData.currentPlayers.splice(playerIndex - 1, 1);
+
+    // If there's someone in the queue, move them to current players
+    if (courtData.queue && courtData.queue.length > 0) {
+      const nextPlayer = courtData.queue.shift();
+      courts[court].timeLeft = 600; 
+      courtData.currentPlayers.push(...nextPlayer);  // Add each player to court
+
+      // Reset the court timer
+      resetCourtTimer(court); 
+    }
+
     Swal.fire({
       icon: "success",
       title: `${playerName} has been removed from ${court}`,
     });
 
-    // Update the courts data in local storage
+    // Save updates to localStorage
     localStorage.setItem("courtsData", JSON.stringify(courts));
-
-    renderCourts(); // Re-render the courts to reflect the change in the UI
-    saveCourtData(); // Optionally save data to a backend or elsewhere
+    renderCourts(); // Re-render the court layout
+    saveCourtData();
   } else {
     Swal.fire({
       icon: "error",
