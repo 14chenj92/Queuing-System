@@ -1,35 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Manage Users</title>
     <link rel="stylesheet" href="reset.css" />
     <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
+  </head>
+  <body>
+    <button onclick="goFullscreen()">Go Fullscreen</button>
     <!-- <h1>Admin Login Requests</h1>
     <div id="pendingLogins"></div> -->
     <h2>All Registered Users</h2>
     <div id="userList"></div>
     <div class="userInfo">
-    <div class="userLeft">
-    <div id="userDetails"></div> 
-    <div id="signedInDropdown"></div> 
-    <div id="signedInUserDetails"></div> 
-</div>
-    <div id="userStats"></div>
-</div>
+      <div class="userLeft">
+        <div id="userDetails"></div>
+        <div id="signedInDropdown"></div>
+        <div id="signedInUserDetails"></div>
+      </div>
+      <div id="userStats"></div>
+    </div>
     <select id="courtSelection">
-        <option value="Paris">Paris</option>
-        <option value="London">London</option>
-        <option value="Berlin">Berlin</option>
-        <option value="Tokyo">Tokyo</option>
-        <option value="New Delhi">New Delhi</option>
-        <option value="Jakarta">Jakarta</option>
-        <option value="Beijing">Beijing</option>
-        <option value="Toronto">Toronto</option>
-        <option value="New York">New York</option>
+      <option value="Paris">Paris</option>
+      <option value="London">London</option>
+      <option value="Berlin">Berlin</option>
+      <option value="Tokyo">Tokyo</option>
+      <option value="New Delhi">New Delhi</option>
+      <option value="Jakarta">Jakarta</option>
+      <option value="Beijing">Beijing</option>
+      <option value="Toronto">Toronto</option>
+      <option value="New York">New York</option>
     </select>
     <h2>Court Status</h2>
     <div id="courtStatus" class="court-container"></div>
@@ -39,74 +40,92 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
 
     <script>
-        setInterval(async () => {
-            const response = await fetch("/admin/pending");
-            const pendingLogins = await response.json();
-    
-            console.log("Pending Logins:", pendingLogins);
-    
-            if (pendingLogins.length > 0) {
-                const login = pendingLogins[0];  
-                console.log("Login to approve/deny:", login);  
-    
-                const result = await Swal.fire({
-                    title: `New login request from ${login.username}`,
-                    text: `Do you want to approve or deny this login request?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Approve',
-                    cancelButtonText: 'Deny'
-                });
-    
-                console.log(result);
-    
-                if (result.isConfirmed) {
-                    approveLogin(login.username);
-                } else {
-                    denyLogin(login.username);
-                }
-            }
-        }, 4000); 
-    
-        // Approve user login
-        async function approveLogin(username) {
-            console.log("Approving login for:", username);  
-    
-            const response = await fetch("/admin/approve", {
-                method: "POST",
-                body: JSON.stringify({ username }),
-                headers: { "Content-Type": "application/json" }
-            });
-    
-            const result = await response.json();
-            console.log("Approve Response:", result);  
-    
-            if (result.status === "approved") {
-                Swal.fire('Approved!', 'The user login has been approved.', 'success');
-            }
+      setInterval(async () => {
+        const response = await fetch("/admin/pending");
+        const pendingLogins = await response.json();
+
+        console.log("Pending Logins:", pendingLogins);
+
+        if (pendingLogins.length > 0) {
+          const login = pendingLogins[0];
+          console.log("Login to approve/deny:", login);
+
+          const result = await Swal.fire({
+            title: `New login request from ${login.username}`,
+            text: `Do you want to approve or deny this login request?`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Approve",
+            cancelButtonText: "Deny",
+          });
+
+          console.log(result);
+
+          if (result.isConfirmed) {
+            approveLogin(login.username);
+          } else {
+            denyLogin(login.username);
+          }
         }
-    
-        // Deny user login
-        async function denyLogin(username) {
-            console.log("Denying login for:", username);  
-    
-            const response = await fetch("/admin/deny", {
-                method: "POST",
-                body: JSON.stringify({ username }),
-                headers: { "Content-Type": "application/json" }
-            });
-    
-            const result = await response.json();
-            console.log("Deny Response:", result);  
-    
-            if (result.status === "denied") {
-                Swal.fire('Denied!', 'The user login has been denied.', 'error');
-            }
+      }, 4000);
+
+      // Approve user login
+      async function approveLogin(username) {
+        console.log("Approving login for:", username);
+
+        const response = await fetch("/admin/approve", {
+          method: "POST",
+          body: JSON.stringify({ username }),
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const result = await response.json();
+        console.log("Approve Response:", result);
+
+        if (result.status === "approved") {
+          Swal.fire(
+            "Approved!",
+            "The user login has been approved.",
+            "success"
+          );
         }
+      }
+
+      // Deny user login
+      async function denyLogin(username) {
+        console.log("Denying login for:", username);
+
+        const response = await fetch("/admin/deny", {
+          method: "POST",
+          body: JSON.stringify({ username }),
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const result = await response.json();
+        console.log("Deny Response:", result);
+
+        if (result.status === "denied") {
+          Swal.fire("Denied!", "The user login has been denied.", "error");
+        }
+      }
     </script>
-        <script>
-                showUsers();
-                renderCourts()
-                </script>
-</body>
+    <script>
+      showUsers();
+      renderCourts();
+    </script>
+    <script>
+      function goFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+          // Safari
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          // IE11
+          elem.msRequestFullscreen();
+        }
+      }
+    </script>
+  </body>
 </html>

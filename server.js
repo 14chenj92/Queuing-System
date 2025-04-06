@@ -5,11 +5,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const http = require("http");
-const socketIo = require("socket.io");
 
 
 const server = http.createServer(app);
-const io = socketIo(server);
 require('dotenv').config();
 
 
@@ -20,7 +18,6 @@ app.use(express.urlencoded({ extended: true }));
 const session = require("express-session");
 
 const cors = require("cors");
-
 
 // Middleware
 app.use(express.json());
@@ -48,6 +45,7 @@ app.use(
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "main.html"));
 });
+
 
 // Save the code in the session
 app.post("/save-code", (req, res) => {
@@ -247,15 +245,15 @@ app.post('/register', (req, res) => {
     const { username, password, firstName, lastName } = req.body;
     const email = username; 
 
-    const checkUserQuery = 'SELECT * FROM users WHERE username = ?';
-    db.query(checkUserQuery, [username], (err, result) => {
+    const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
+    db.query(checkUserQuery, [email], (err, result) => {
         if (err) {
             console.log("Error checking duplicates:", err);
             return res.status(500).json({ message: 'Error checking user data' });
         }
 
         if (result.length > 0) {
-            return res.status(400).json({ message: 'Username already exists' });
+            return res.status(400).json({ message: 'Email already exists' });
         }
 
         const sql = 'INSERT INTO users (username, password, firstName, lastName, email) VALUES (?, ?, ?, ?, ?)';

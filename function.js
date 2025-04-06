@@ -16,6 +16,7 @@ function generatePassword() {
     return;
   }
 
+
   fetch("/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
