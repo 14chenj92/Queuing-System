@@ -498,7 +498,7 @@ let courts = {
     "Beijing": { timeLeft: 600, currentPlayers: [], queue: [] },
     "Toronto": { timeLeft: 600, currentPlayers: [], queue: [] },
     "New York": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "Las Vegas": { timeLeft: 600, currentPlayers: [], queue: [] }
+    "Rest Area": { timeLeft: 600, currentPlayers: [], queue: [] }
 };
 
 
