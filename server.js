@@ -441,6 +441,19 @@ app.post('/users/validate', (req, res) => {
     });
 });
 
+app.post('/admin/reset-signedin', (req, res) => {
+    const sql = 'UPDATE users SET isSignedIn = 0';
+  
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error('Error resetting users:', err);
+        return res.status(500).json({ error: 'Database error while resetting users' });
+      }
+  
+      return res.status(200).json({ message: 'All users have been signed out successfully.' });
+    });
+  });
+  
 
 // Endpoint to update the isSignedIn status
 app.put('/update-signin-status', (req, res) => {
@@ -614,8 +627,8 @@ app.post("/login", (req, res) => {
         const user = results[0];
 
         if (user.isSignedIn === 0) {
-            // If isSignedIn is 0, change status to "pending"
-            const updateSql = 'UPDATE users SET status = "pending" WHERE email = ?';
+            // If isSignedIn is 0, change status to "pending" and update signInDate
+            const updateSql = 'UPDATE users SET status = "pending", signInDate = NOW() WHERE email = ?';
             db.query(updateSql, [email], (err, updateResults) => {
                 if (err) {
                     console.error('Failed to update status:', err);
@@ -624,8 +637,8 @@ app.post("/login", (req, res) => {
                 return res.status(200).json({ status: "pending" });
             });
         } else if (user.isSignedIn === 1) {
-            // If isSignedIn is 1, change status to "approved" and allow login
-            const updateSql = 'UPDATE users SET status = "approved" WHERE email = ?';
+            // If isSignedIn is 1, change status to "approved" and update signInDate
+            const updateSql = 'UPDATE users SET status = "approved", signInDate = NOW() WHERE email = ?';
             db.query(updateSql, [email], (err, updateResults) => {
                 if (err) {
                     console.error('Failed to update status:', err);

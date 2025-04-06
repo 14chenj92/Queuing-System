@@ -194,12 +194,12 @@ function editUser(username) {
   let newPassword = prompt(
     `Enter new password for ${username} (leave blank to keep unchanged):`
   );
-  let newFirstName = prompt(
-    `Enter new first name for ${username} (leave blank to keep unchanged):`
-  );
-  let newLastName = prompt(
-    `Enter new last name for ${username} (leave blank to keep unchanged):`
-  );
+  // let newFirstName = prompt(
+  //   `Enter new first name for ${username} (leave blank to keep unchanged):`
+  // );
+  // let newLastName = prompt(
+  //   `Enter new last name for ${username} (leave blank to keep unchanged):`
+  // );
   let newEmail = prompt(
     `Enter new email for ${username} (leave blank to keep unchanged):`
   );
@@ -213,9 +213,9 @@ function editUser(username) {
   let newMembership = prompt(
     `Enter new membership for ${username} (leave blank to keep unchanged):`
   );
-  let newSignInDate = prompt(
-    `Enter new sign-in date for ${username} (leave blank to keep unchanged):`
-  );
+  // let newSignInDate = prompt(
+  //   `Enter new sign-in date for ${username} (leave blank to keep unchanged):`
+  // );
   let newIsSignedIn = confirm(
     `Is ${username} currently signed in? Click OK for Yes, Cancel for No.`
   )
@@ -225,11 +225,11 @@ function editUser(username) {
   let updatedData = {};
 
   if (newPassword) updatedData.password = newPassword;
-  if (newFirstName) updatedData.firstName = newFirstName;
-  if (newLastName) updatedData.lastName = newLastName;
+  // if (newFirstName) updatedData.firstName = newFirstName;
+  // if (newLastName) updatedData.lastName = newLastName;
   if (newEmail) updatedData.email = newEmail;
   if (newMembership) updatedData.membership = newMembership;
-  if (newSignInDate) updatedData.signInDate = newSignInDate;
+  // if (newSignInDate) updatedData.signInDate = newSignInDate;
   updatedData.isSignedIn = newIsSignedIn;
   updatedData.registered = newregistered;
 
@@ -546,7 +546,7 @@ function renderCourts() {
 
     let courtStatusClass =
       details.currentPlayers.length === 0 ? "open" : "closed";
-    if (court === "Las Vegas") {
+    if (court === "Rest Area") {
       courtStatusClass += " unavailable"; // Mark Las Vegas as unavailable
     }
 
@@ -554,7 +554,7 @@ function renderCourts() {
     courtDisplay += `<h3>${court}</h3>`;
 
     const statusText =
-      court === "Las Vegas"
+      court === "Rest Area"
         ? "Unavailable"
         : details.currentPlayers.length === 0
         ? "Open"
@@ -575,7 +575,7 @@ function renderCourts() {
       details.currentPlayers.forEach((player, index) => {
         courtDisplay += `<p>Player ${
           index + 1
-        }: ${player} <button onclick="removePlayer(${
+        }: ${player} <button class="remove-btn" onclick="removePlayer(${
           index + 1
         })">Remove</button></p>`;
       });

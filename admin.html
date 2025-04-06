@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <button onclick="goFullscreen()">Go Fullscreen</button>
     <!-- <h1>Admin Login Requests</h1>
     <div id="pendingLogins"></div> -->
     <h2 id="registeredUsersHeading">All Registered Users</h2>
+    <button onclick="resetAllUsers()">Reset Sign In</button>
     <div id="userList"></div>
     <div class="userInfo">
       <div class="userLeft">
@@ -133,6 +133,27 @@
     
       document.getElementById("registeredUsersHeading").textContent = 
         `All Registered Users as of ${formattedDateTime}`;
+    </script>
+    <script>
+      async function resetAllUsers() {
+        try {
+          const response = await fetch('/admin/reset-signedin', {
+            method: 'POST'
+          });
+    
+          const result = await response.json();
+    
+          if (response.ok) {
+            alert(result.message);
+            location.reload();
+          } else {
+            alert('Failed to reset users.');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Something went wrong.');
+        }
+      }
     </script>
   </body>
 </html>
