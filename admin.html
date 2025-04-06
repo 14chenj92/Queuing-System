@@ -11,7 +11,7 @@
     <button onclick="goFullscreen()">Go Fullscreen</button>
     <!-- <h1>Admin Login Requests</h1>
     <div id="pendingLogins"></div> -->
-    <h2>All Registered Users</h2>
+    <h2 id="registeredUsersHeading">All Registered Users</h2>
     <div id="userList"></div>
     <div class="userInfo">
       <div class="userLeft">
@@ -126,6 +126,13 @@
           elem.msRequestFullscreen();
         }
       }
+    </script>
+    <script>
+      const now = new Date();
+      const formattedDateTime = now.toLocaleString(); // Format based on user locale
+    
+      document.getElementById("registeredUsersHeading").textContent = 
+        `All Registered Users as of ${formattedDateTime}`;
     </script>
   </body>
 </html>

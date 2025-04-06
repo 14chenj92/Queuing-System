@@ -55,8 +55,7 @@ async function login() {
         Swal.fire({
             icon: 'success',
             title: 'Login Approved',
-            html: `You are now logged in. \n
-            Your password for today is <strong style="color: green;">${result.password}</strong>`,
+            html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
         })
         .then(() => {
             // Redirect after SweetAlert
@@ -72,7 +71,7 @@ async function login() {
         Swal.fire({
             icon: 'error',
             title: 'Login Failed',
-            text: 'Email not found.'
+            text: 'Email not found. Please register first.'
         });
     }
 }

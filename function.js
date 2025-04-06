@@ -54,7 +54,7 @@ function showUsers() {
   .then((response) => response.json())
   .then((data) => {
   users = {}; 
-  let userDropdown = `<h3>Select a User</h3><select id="userSelect" onchange="displayUserDetails()">`;
+  let userDropdown = `<h3>Manage Users</h3><select id="userSelect" onchange="displayUserDetails()">`;
   userDropdown += `<option value="">-- Select a User --</option>`;
   
   data.forEach((user) => {
@@ -95,7 +95,7 @@ function displayUserDetails() {
       <strong>Last Name:</strong> ${user.lastName} <br>
       <strong>Email:</strong> ${user.email} <br>
       <strong>Registered:</strong> ${user.registered} <br>
-      <strong>Membership:</strong> ${user.membership} <br>
+      <strong>Membership Type:</strong> ${user.membership} <br>
       <strong>Sign In Date:</strong> ${formattedSignInDate} <br>
       <strong>isSignedIn:</strong> ${user.isSignedIn} <br>
       <button onclick="editUser('${user.username}')">Edit</button>
@@ -176,7 +176,7 @@ function displaySignedInUserDetails() {
       <strong>Last Name:</strong> ${user.lastName} <br>
       <strong>Email:</strong> ${user.email} <br>
       <strong>Registered:</strong> ${user.registered} <br>
-      <strong>Membership:</strong> ${user.membership} <br>
+      <strong>Membership Type:</strong> ${user.membership} <br>
       <strong>Sign In Date:</strong> ${formattedSignInDate} <br>
       <strong>isSignedIn:</strong> ${user.isSignedIn} <br>
       <button onclick="editUser('${user.username}')">Edit</button>
@@ -368,7 +368,6 @@ async function bookCourt() {
 }
 
 async function unbookCourt() {
-  const court = document.getElementById("courtSelection").value;
   let enteredPlayers = [];
 
   let users = {};
@@ -405,7 +404,7 @@ async function unbookCourt() {
       if (!allBookedPlayers.includes(fullName)) {
         Swal.fire({
           icon: "error",
-          title: `User ${fullName} is not part of the current court booking.`,
+          title: `User ${fullName} is not part of any court booking.`,
         });
         return;
       }
@@ -422,37 +421,41 @@ async function unbookCourt() {
     return;
   }
 
-  const courtBooking = courts[court];
-  const currentPlayers = courtBooking.currentPlayers;
+  let unbookedPlayers = [];
 
-  const playersToUnbook = enteredPlayers.filter((player) =>
-    currentPlayers.includes(player)
-  );
+  for (const courtName in courts) {
+    const courtBooking = courts[courtName];
+    const currentPlayers = courtBooking.currentPlayers;
 
-  if (playersToUnbook.length === 0) {
+    const playersToUnbook = enteredPlayers.filter((player) =>
+      currentPlayers.includes(player)
+    );
+
+    if (playersToUnbook.length > 0) {
+      courtBooking.currentPlayers = currentPlayers.filter(
+        (player) => !playersToUnbook.includes(player)
+      );
+      unbookedPlayers.push(...playersToUnbook);
+
+      if (courtBooking.currentPlayers.length === 0) {
+        courtBooking.timeLeft = 0;
+
+        if (courtBooking.queue.length > 0) {
+          const nextQueue = courtBooking.queue.shift();
+          courtBooking.currentPlayers = nextQueue;
+          courtBooking.timeLeft = 600;
+          startCountdown(courtName);
+        }
+      }
+    }
+  }
+
+  if (unbookedPlayers.length === 0) {
     Swal.fire({
       icon: "error",
       title: "No matching players found for unbooking.",
     });
     return;
-  }
-
-  courtBooking.currentPlayers = currentPlayers.filter(
-    (player) => !playersToUnbook.includes(player)
-  );
-
-  if (courtBooking.currentPlayers.length === 0) {
-    courtBooking.timeLeft = 0;
-  }
-
-  if (
-    courtBooking.currentPlayers.length === 0 &&
-    courtBooking.queue.length > 0
-  ) {
-    const nextQueue = courtBooking.queue.shift();
-    courtBooking.currentPlayers = nextQueue;
-    courtBooking.timeLeft = 600;
-    startCountdown(court);
   }
 
   saveCourtData();
@@ -462,11 +465,12 @@ async function unbookCourt() {
   Swal.fire({
     icon: "success",
     title: "Court Unbooked Successfully",
-    text: `Players ${enteredPlayers.join(
+    text: `Players ${unbookedPlayers.join(
       ", "
-    )} have been successfully unbooked from the court.`,
+    )} have been successfully unbooked from their court(s).`,
   });
 }
+
 
 function saveCourtData() {
   fetch("/update-courts", {
@@ -554,7 +558,7 @@ function renderCourts() {
         ? "Unavailable"
         : details.currentPlayers.length === 0
         ? "Open"
-        : "Closed";
+        : "In Progress";
     courtDisplay += `<p class="status">${statusText}</p>`;
 
     if (courtStatusClass === "closed") {

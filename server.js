@@ -420,7 +420,7 @@ app.post('/users/validate', (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ error: `User '${username}' not found` });
         }
 
         const user = results[0];
@@ -430,14 +430,14 @@ app.post('/users/validate', (req, res) => {
         }
 
         if (user.registered !== 1) {
-            return res.status(403).json({ error: 'User not registered. Please verify your email.' });
+            return res.status(403).json({ error: `${username} is not registered. Please verify your email.` });
         }
 
         if (user.isSignedIn !== 1) {
-            return res.status(403).json({ error: 'User not signed in. Please sign in first.' });
+            return res.status(403).json({ error: `${username} is not signed in. Please sign in first.` });
         }
 
-        return res.status(200).json({ message: 'User validated successfully' });
+        return res.status(200).json({ message: `${username} validated successfully` });
     });
 });
 
@@ -591,56 +591,52 @@ let approvedLogins = [];
 
 app.post("/login", (req, res) => {
     const { email } = req.body;
-  
+
     if (!email) {
-      return res.status(400).json({ message: "Email is required" });
+        return res.status(400).json({ message: "Email is required" });
     }
-  
+
     console.log(`Login attempt for email: ${email}`);
-  
-    const sql = 'SELECT email, status, password FROM users WHERE email = ?';
+
+    const sql = 'SELECT email, status, password, isSignedIn FROM users WHERE email = ?';
     db.query(sql, [email], (err, results) => {
-      if (err) {
-        console.error('Database query error:', err);
-        return res.status(500).json({ error: 'Database query failed' });
-      }
-  
-      console.log('Query results:', results);
-  
-      if (results.length === 0) {
-        return res.status(404).json({ status: "failed" });
-      }
-  
-      const user = results[0];
-  
-      if (user.status === "approved") {
-        const updateSql = 'UPDATE users SET isSignedIn = 1 WHERE email = ?';
-        db.query(updateSql, [email], (err, updateResults) => {
-            if (err) {
-                console.error('Failed to update isSignedIn:', err);
-                return res.status(500).json({ error: 'Failed to update user status' });
-            }
-            return res.json({ status: 'approved', password: user.password });
-        });
-    }
-    
-  
-      if (user.status === "pending") {
-        return res.status(200).json({ status: "pending" });
-      }
-  
-      if (user.status === "denied") {
-        const updateSql = 'UPDATE users SET status = "pending" WHERE email = ?';
-        db.query(updateSql, [email], (err, updateResults) => {
-            if (err) {
-                console.error('Failed to update status:', err);
-                return res.status(500).json({ error: 'Failed to update user status' });
-            }
-            return res.status(200).json({ status: "pending" });
-        });
-    }
+        if (err) {
+            console.error('Database query error:', err);
+            return res.status(500).json({ error: 'Database query failed' });
+        }
+
+        console.log('Query results:', results);
+
+        if (results.length === 0) {
+            return res.status(404).json({ status: "failed" });
+        }
+
+        const user = results[0];
+
+        if (user.isSignedIn === 0) {
+            // If isSignedIn is 0, change status to "pending"
+            const updateSql = 'UPDATE users SET status = "pending" WHERE email = ?';
+            db.query(updateSql, [email], (err, updateResults) => {
+                if (err) {
+                    console.error('Failed to update status:', err);
+                    return res.status(500).json({ error: 'Failed to update user status' });
+                }
+                return res.status(200).json({ status: "pending" });
+            });
+        } else if (user.isSignedIn === 1) {
+            // If isSignedIn is 1, change status to "approved" and allow login
+            const updateSql = 'UPDATE users SET status = "approved" WHERE email = ?';
+            db.query(updateSql, [email], (err, updateResults) => {
+                if (err) {
+                    console.error('Failed to update status:', err);
+                    return res.status(500).json({ error: 'Failed to update user status' });
+                }
+                return res.json({ status: "approved", password: user.password });
+            });
+        }
     });
 });
+
 
 
 // Admin fetch pending users
@@ -662,8 +658,8 @@ app.get("/admin/pending", (req, res) => {
     }
 
     generateRandomPassword((newPassword) => {
-        // Update the user's password and set the status to 'approved'
-        const sql = 'UPDATE users SET password = ?, status = "approved" WHERE username = ?';
+        // Update the user's password, set the status to 'approved', and set isSignedIn to 1
+        const sql = 'UPDATE users SET password = ?, status = "approved", isSignedIn = 1 WHERE username = ?';
         db.query(sql, [newPassword, username], (err, results) => {
             if (err) {
                 return res.status(500).json({ error: 'Database query failed' });
