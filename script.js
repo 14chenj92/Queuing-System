@@ -4,7 +4,7 @@ document.getElementById("verifyForm").addEventListener("submit", verifyCode);
 function sendMail(event) {
     event.preventDefault();
 
-    let verificationCode = Math.floor(100000 + Math.random() * 900000); // 6-digit code
+    let verificationCode = Math.floor(100000 + Math.random() * 900000); 
     let email = document.getElementById("email").value;
 
     let params = {
@@ -12,7 +12,6 @@ function sendMail(event) {
         code: verificationCode
     };
 
-    // Send the code via email using EmailJS
     emailjs.send("service_cuab1yr", "template_sidhjme", params)
         .then(() => {
 

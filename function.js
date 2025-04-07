@@ -116,12 +116,10 @@ function displayUserDetails() {
 
     let totalSignedInToday = signedInTodayUsers.length;
 
-    // Users with membership signed in today (assuming membership > 0 is valid)
     let signedInWithMembership = signedInTodayUsers.filter(
       (user) => user.membership > 0
     ).length;
 
-    // Users without membership signed in today
     let signedInWithoutMembership = totalSignedInToday - signedInWithMembership;
 
     let statsHtml = `
@@ -131,7 +129,6 @@ function displayUserDetails() {
       <strong>Drop In:</strong> ${signedInWithoutMembership} <br>
       `;
 
-    // Create dropdown for users signed in today
     let signedInDropdown = `<label for="signedInSelect"><h3>Users Signed In Today</h3></label>
       <select id="signedInSelect" onchange="displaySignedInUserDetails()">
           <option value="">Select a User</option>`;
@@ -285,7 +282,7 @@ async function validateUser(username, password) {
       throw new Error(data.error || "Validation failed");
     }
 
-    return true; // User is valid and registered
+    return true; 
   } catch (error) {
     Swal.fire({ icon: "error", title: error.message });
     return false;
@@ -611,7 +608,6 @@ function removePlayer(playerIndex) {
   const playerName = courtData.currentPlayers[playerIndex - 1];
 
   if (playerName) {
-    // Remove player from current players
     courtData.currentPlayers.splice(playerIndex - 1, 1);
 
     // If there's someone in the queue, move them to current players
@@ -620,7 +616,6 @@ function removePlayer(playerIndex) {
       courts[court].timeLeft = 600; 
       courtData.currentPlayers.push(...nextPlayer);  // Add each player to court
 
-      // Reset the court timer
       resetCourtTimer(court); 
     }
 
@@ -631,7 +626,7 @@ function removePlayer(playerIndex) {
 
     // Save updates to localStorage
     localStorage.setItem("courtsData", JSON.stringify(courts));
-    renderCourts(); // Re-render the court layout
+    renderCourts(); 
     saveCourtData();
   } else {
     Swal.fire({

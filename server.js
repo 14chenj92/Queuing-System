@@ -28,14 +28,13 @@ app.use(cors({
 
 app.use(
     session({
-        secret: process.env.SESSION_SECRET, // Use a strong secret key
+        secret: process.env.SESSION_SECRET, 
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: false, // Ensure cookies are secure on production
-            httpOnly: true, // Helps prevent XSS attacks
+            secure: false, 
+            httpOnly: true, 
             sameSite: "strict", 
-            // Helps prevent CSRF attacks
         },
     })
 );
@@ -110,7 +109,7 @@ app.post("/verify-code", (req, res) => {
             });
         });
     } else {
-        req.session.destroy(); // Prevent infinite retries with the same session
+        req.session.destroy(); 
         res.status(400).send("Invalid code. Request a new one.");
     }
 });
@@ -119,30 +118,27 @@ app.post("/verify-code", (req, res) => {
 
 
 
-// Database Connection
-// const db = mysql.createConnection({
-//     host: 'localhost',
-//     user: 'root', 
-//     password: 'root', 
-//     database: 'users_db' 
-// });
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: '21bc', 
+    password: '21bc', 
+    database: 'users_db' 
+});
 
 
-let db;
+// let db;
 
-if (process.env.JAWSDB_URL) {
-  // If JawsDB URL is set (used on Heroku)
-  db = mysql.createConnection(process.env.JAWSDB_URL);
-} else {
-  // Local development fallback (for testing)
-  db = mysql.createConnection({
-    host: 'localhost',  // Localhost for local dev, should be different in production
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: 3306
-  });
-}
+// if (process.env.JAWSDB_URL) {
+//   db = mysql.createConnection(process.env.JAWSDB_URL);
+// } else {
+//   db = mysql.createConnection({
+//     host: 'localhost', 
+//     user: process.env.DB_USER,
+//     password: process.env.DB_PASSWORD,
+//     database: process.env.DB_NAME,
+//     port: 3306
+//   });
+// }
 
 // Connecting to the database
 db.connect((err) => {
@@ -152,24 +148,6 @@ db.connect((err) => {
   }
   console.log('Connected to the database with ID:', db.threadId);
 });
-
-
-// Alternatively, if you want to pass individual credentials, do the following:
-// const db = mysql.createConnection({
-//     host: 'ipobfcpvprjpmdo9.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
-//     user: 'root',
-//     password: 'root',
-//     database: 'users_db'
-// });
-
-// db.getConnection((err, connection) => {
-//     if (err) {
-//         console.error('Database connection error:', err);
-//         return;
-//     }
-//     console.log('Connected to MySQL database');
-//     connection.release(); 
-// });
 
 
 // User Table
@@ -293,28 +271,24 @@ app.post("/check-login-id", (req, res) => {
         return res.status(500).send({ exists: false });
       }
       if (results.length > 0) {
-        return res.json({ exists: true }); // User exists
+        return res.json({ exists: true }); 
       } else {
-        return res.json({ exists: false }); // User does not exist
+        return res.json({ exists: false }); 
       }
     });
   });
 
 
 app.post('/check-email', (req, res) => {
-    const { loginID } = req.body;  // loginID is either the email or username entered by the user
-
-    // Query to check if the email exists in the database
+    const { loginID } = req.body;  
     const query = 'SELECT COUNT(*) AS count FROM users WHERE email = ?';
     db.query(query, [loginID], (err, result) => {
         if (err) {
-            // If there's an error with the database query
             return res.status(500).json({ error: 'Database error' });
         }
 
-        // If count > 0, it means the email exists
         const emailExists = result[0].count > 0;
-        res.json({ exists: emailExists });  // Respond with JSON
+        res.json({ exists: emailExists });  
     });
 });
 
@@ -333,12 +307,10 @@ app.put('/users/:username', (req, res) => {
     const { username } = req.params;
     const { password, firstName, lastName, email, registered, membership, signInDate, isSignedIn } = req.body;
 
-    // Ensure at least one field to update
     if (!password && !firstName && !lastName && !email && registered === undefined) {
         return res.status(400).json({ error: 'No data provided to update' });
     }
 
-    // Query to check if the user exists
     const checkUserApprovalQuery = 'SELECT registered FROM users WHERE username = ?';
     db.query(checkUserApprovalQuery, [username], (err, result) => {
         if (err) {
@@ -349,7 +321,6 @@ app.put('/users/:username', (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Dynamically build the SET clause based on provided fields
         let updates = [];
         let values = [];
 
@@ -386,16 +357,13 @@ app.put('/users/:username', (req, res) => {
             values.push(isSignedIn);
         }
 
-        // Ensure there are fields to update
         if (updates.length === 0) {
             return res.status(400).json({ error: 'No valid fields to update' });
         }
 
-        // Build the update query
         const query = `UPDATE users SET ${updates.join(', ')} WHERE username = ?`;
         values.push(username);
 
-        // Execute the update query
         db.query(query, values, (err, result) => {
             if (err) {
                 return res.status(500).json({ error: 'Database error', details: err });
@@ -455,11 +423,10 @@ app.post('/admin/reset-signedin', (req, res) => {
   });
   
 
-// Endpoint to update the isSignedIn status
 app.put('/update-signin-status', (req, res) => {
     const { loginID, isSignedIn } = req.body;
   
-    const query = 'UPDATE users SET isSignedIn = ? WHERE email = ?';  // Assuming you're using email as loginID
+    const query = 'UPDATE users SET isSignedIn = ? WHERE email = ?';  
     db.query(query, [isSignedIn, loginID], (err, result) => {
       if (err) {
         return res.status(500).json({ error: 'Failed to update sign-in status' });
@@ -637,7 +604,6 @@ app.post("/login", (req, res) => {
                 return res.status(200).json({ status: "pending" });
             });
         } else if (user.isSignedIn === 1) {
-            // If isSignedIn is 1, change status to "approved" and update signInDate
             const updateSql = 'UPDATE users SET status = "approved", signInDate = NOW() WHERE email = ?';
             db.query(updateSql, [email], (err, updateResults) => {
                 if (err) {
@@ -671,7 +637,6 @@ app.get("/admin/pending", (req, res) => {
     }
 
     generateRandomPassword((newPassword) => {
-        // Update the user's password, set the status to 'approved', and set isSignedIn to 1
         const sql = 'UPDATE users SET password = ?, status = "approved", isSignedIn = 1 WHERE username = ?';
         db.query(sql, [newPassword, username], (err, results) => {
             if (err) {
