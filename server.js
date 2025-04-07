@@ -1,16 +1,13 @@
-const express = require('express');
-const mysql = require('mysql2');
-const bodyParser = require('body-parser');
-const path = require('path');
+const express = require("express");
+const mysql = require("mysql2");
+const bodyParser = require("body-parser");
+const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3001;
 const http = require("http");
 
-
 const server = http.createServer(app);
-require('dotenv').config();
-
-
+require("dotenv").config();
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -21,110 +18,111 @@ const cors = require("cors");
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    credentials: true
-}));
-
 app.use(
-    session({
-        secret: process.env.SESSION_SECRET, 
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-            secure: false, 
-            httpOnly: true, 
-            sameSite: "strict", 
-        },
-    })
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    credentials: true,
+  })
 );
 
-
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      httpOnly: true,
+      sameSite: "strict",
+    },
+  })
+);
 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "main.html"));
+  res.sendFile(path.join(__dirname, "main.html"));
 });
-
 
 // Save the code in the session
 app.post("/save-code", (req, res) => {
-    const { email, code } = req.body;
+  const { email, code } = req.body;
 
-    if (!email || !code) {
-        return res.status(400).send("Email and code are required.");
-    }
+  if (!email || !code) {
+    return res.status(400).send("Email and code are required.");
+  }
 
-    req.session.verificationCode = code;
-    req.session.email = email; 
+  req.session.verificationCode = code;
+  req.session.email = email;
 
-    console.log("Saved to session:", req.session.verificationCode, req.session.email);
-    res.send("Verification code saved.");
+  console.log(
+    "Saved to session:",
+    req.session.verificationCode,
+    req.session.email
+  );
+  res.send("Verification code saved.");
 });
-
-
 
 app.post("/verify-code", (req, res) => {
-    const { email, code } = req.body;
-    console.log("Verification code in session:", req.session.verificationCode);
-    console.log("Email in session:", req.session.email);
+  const { email, code } = req.body;
+  console.log("Verification code in session:", req.session.verificationCode);
+  console.log("Email in session:", req.session.email);
 
-    // Ensure session data exists
-    if (!req.session.verificationCode || !req.session.email) {
-        return res.status(400).send("No verification code found. Request a new one.");
-    }
+  // Ensure session data exists
+  if (!req.session.verificationCode || !req.session.email) {
+    return res
+      .status(400)
+      .send("No verification code found. Request a new one.");
+  }
 
-    // Check if email matches the one stored in session
-    if (email !== req.session.email) {
-        return res.status(400).send("Email does not match.");
-    }
+  // Check if email matches the one stored in session
+  if (email !== req.session.email) {
+    return res.status(400).send("Email does not match.");
+  }
 
-    // Check if the entered code matches the stored session code
-    if (code == req.session.verificationCode) {
-        db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
-            if (err) {
-                console.error("Database query error:", err);
-                return res.status(500).send("Internal Server Error");
-            }
+  // Check if the entered code matches the stored session code
+  if (code == req.session.verificationCode) {
+    db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
+      if (err) {
+        console.error("Database query error:", err);
+        return res.status(500).send("Internal Server Error");
+      }
 
-            if (results.length === 0) {
-                return res.status(404).send("User not found.");
-            }
+      if (results.length === 0) {
+        return res.status(404).send("User not found.");
+      }
 
-            const user = results[0];
-            const password = user.password; // Fetch the password
+      const user = results[0];
+      const password = user.password; // Fetch the password
 
-            // Update registered status
-            db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {
-                if (err) {
-                    console.error("Database update error:", err);
-                    return res.status(500).send("Error updating approval status.");
-                }
+      // Update registered status
+      db.query(
+        "UPDATE users SET registered = TRUE WHERE email = ?",
+        [email],
+        (err) => {
+          if (err) {
+            console.error("Database update error:", err);
+            return res.status(500).send("Error updating approval status.");
+          }
 
-                req.session.destroy(); // Clear session after verification
-                res.json({
-                    message: "Email verified successfully! Account registered.",
-                    generatedPassword: `Email verified successfully! Account registered.`
-                });
-                
-            });
-        });
-    } else {
-        req.session.destroy(); 
-        res.status(400).send("Invalid code. Request a new one.");
-    }
+          req.session.destroy(); // Clear session after verification
+          res.json({
+            message: "Email verified successfully! Account registered.",
+            generatedPassword: `Email verified successfully! Account registered.`,
+          });
+        }
+      );
+    });
+  } else {
+    req.session.destroy();
+    res.status(400).send("Invalid code. Request a new one.");
+  }
 });
-
-
-
-
 
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: '21bc', 
-    password: '21bc', 
-    database: 'users_db' 
+  host: "localhost",
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
-
 
 // let db;
 
@@ -132,7 +130,7 @@ const db = mysql.createConnection({
 //   db = mysql.createConnection(process.env.JAWSDB_URL);
 // } else {
 //   db = mysql.createConnection({
-//     host: 'localhost', 
+//     host: 'localhost',
 //     user: process.env.DB_USER,
 //     password: process.env.DB_PASSWORD,
 //     database: process.env.DB_NAME,
@@ -143,12 +141,11 @@ const db = mysql.createConnection({
 // Connecting to the database
 db.connect((err) => {
   if (err) {
-    console.error('Error connecting to the database:', err.stack);
+    console.error("Error connecting to the database:", err.stack);
     return;
   }
-  console.log('Connected to the database with ID:', db.threadId);
+  console.log("Connected to the database with ID:", db.threadId);
 });
-
 
 // User Table
 const createUsersTable = `
@@ -165,7 +162,7 @@ CREATE TABLE IF NOT EXISTS users (
     isSignedIn BOOLEAN DEFAULT FALSE,
     status ENUM('pending', 'approved', 'denied') DEFAULT 'pending' -- Add this column
 );
-`
+`;
 
 const createCourtsTable = `
 CREATE TABLE IF NOT EXISTS court_players (
@@ -177,76 +174,127 @@ CREATE TABLE IF NOT EXISTS court_players (
 );
 `;
 
-
-
 db.query(createUsersTable, (err) => {
-    if (err) throw err;
-    console.log('Users table created');
+  if (err) throw err;
+  console.log("Users table created");
 });
 
 db.query(createCourtsTable, (err) => {
-    if (err) throw err;
-    console.log('Court table created');
+  if (err) throw err;
+  console.log("Court table created");
 });
 
 function generateRandomPassword(callback) {
-    const words = [
-        "bear", "lion", "wolf", "frog", "hawk", "seal", "deer", "crow", 
-        "cat", "dog", "fox", "bird", "fish", "duck", "moth", "bee", 
-        "rose", "lily", "daisy", "iris", "fern", "ivy", "bloom", 
-        "gold", "blue", "pink", "red", "cyan", "gray", "aqua", "teal", 
-        "amber", "peach", "plum", "green", "snow", "lava", "sky", 
-        "fire", "wood", "leaf", "sand", "stone", "vibe", "glow",     
-        "bmw", "kia", "gmc", "audi", "ford", "jeep", "tesla", "volvo", 
-        "opel", "mazda"
-    ];
+  const words = [
+    "bear",
+    "lion",
+    "wolf",
+    "frog",
+    "hawk",
+    "seal",
+    "deer",
+    "crow",
+    "cat",
+    "dog",
+    "fox",
+    "bird",
+    "fish",
+    "duck",
+    "moth",
+    "bee",
+    "rose",
+    "lily",
+    "daisy",
+    "iris",
+    "fern",
+    "ivy",
+    "bloom",
+    "gold",
+    "blue",
+    "pink",
+    "red",
+    "cyan",
+    "gray",
+    "aqua",
+    "teal",
+    "amber",
+    "peach",
+    "plum",
+    "green",
+    "snow",
+    "lava",
+    "sky",
+    "fire",
+    "wood",
+    "leaf",
+    "sand",
+    "stone",
+    "vibe",
+    "glow",
+    "bmw",
+    "kia",
+    "gmc",
+    "audi",
+    "ford",
+    "jeep",
+    "tesla",
+    "volvo",
+    "opel",
+    "mazda",
+  ];
 
-    const randomWord = words[Math.floor(Math.random() * words.length)];
+  const randomWord = words[Math.floor(Math.random() * words.length)];
 
-    db.query("SELECT password FROM users WHERE password = ?", [randomWord], (err, results) => {
-        if (err) {
-            console.error("Database error:", err);
-            return;
-        }
+  db.query(
+    "SELECT password FROM users WHERE password = ?",
+    [randomWord],
+    (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return;
+      }
 
-        if (results.length > 0) {
-            generateRandomPassword(callback);
-        } else {
-            callback(randomWord);
-        }
-    });
+      if (results.length > 0) {
+        generateRandomPassword(callback);
+      } else {
+        callback(randomWord);
+      }
+    }
+  );
 }
 
-
 // Routes
-app.post('/register', (req, res) => {
-    const { username, password, firstName, lastName } = req.body;
-    const email = username; 
+app.post("/register", (req, res) => {
+  const { username, password, firstName, lastName } = req.body;
+  const email = username;
 
-    const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
-    db.query(checkUserQuery, [email], (err, result) => {
+  const checkUserQuery = "SELECT * FROM users WHERE email = ?";
+  db.query(checkUserQuery, [email], (err, result) => {
+    if (err) {
+      console.log("Error checking duplicates:", err);
+      return res.status(500).json({ message: "Error checking user data" });
+    }
+
+    if (result.length > 0) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const sql =
+      "INSERT INTO users (username, password, firstName, lastName, email) VALUES (?, ?, ?, ?, ?)";
+    db.query(
+      sql,
+      [username, password, firstName, lastName, email],
+      (err, result) => {
         if (err) {
-            console.log("Error checking duplicates:", err);
-            return res.status(500).json({ message: 'Error checking user data' });
+          console.log("Error inserting user:", err);
+          return res.status(500).json({ message: "Error registering user" });
         }
-
-        if (result.length > 0) {
-            return res.status(400).json({ message: 'Email already exists' });
-        }
-
-        const sql = 'INSERT INTO users (username, password, firstName, lastName, email) VALUES (?, ?, ?, ?, ?)';
-        db.query(sql, [username, password, firstName, lastName, email], (err, result) => {
-            if (err) {
-                console.log("Error inserting user:", err);
-                return res.status(500).json({ message: 'Error registering user' });
-            }
-            res.json({ message: 'User registered successfully' });
-        });
-    });
+        res.json({ message: "User registered successfully" });
+      }
+    );
+  });
 });
 
-
-  
 // Login Route
 // app.post('/login', (req, res) => {
 //     const { username, password } = req.body;
@@ -262,414 +310,494 @@ app.post('/register', (req, res) => {
 // });
 
 app.post("/check-login-id", (req, res) => {
-    const { loginID } = req.body;
-  
-    const query = "SELECT * FROM users WHERE email = ? OR username = ?";
-    db.query(query, [loginID, loginID], (err, results) => {
-      if (err) {
-        console.error("Database query error:", err);
-        return res.status(500).send({ exists: false });
-      }
-      if (results.length > 0) {
-        return res.json({ exists: true }); 
-      } else {
-        return res.json({ exists: false }); 
-      }
-    });
+  const { loginID } = req.body;
+
+  const query = "SELECT * FROM users WHERE email = ? OR username = ?";
+  db.query(query, [loginID, loginID], (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).send({ exists: false });
+    }
+    if (results.length > 0) {
+      return res.json({ exists: true });
+    } else {
+      return res.json({ exists: false });
+    }
   });
-
-
-app.post('/check-email', (req, res) => {
-    const { loginID } = req.body;  
-    const query = 'SELECT COUNT(*) AS count FROM users WHERE email = ?';
-    db.query(query, [loginID], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: 'Database error' });
-        }
-
-        const emailExists = result[0].count > 0;
-        res.json({ exists: emailExists });  
-    });
 });
 
-
-app.get('/users', (req, res) => {
-    const sql = 'SELECT username, password, firstName, lastName, email, registered, membership, signInDate, isSignedIn FROM users';
-    db.query(sql, (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to fetch users' });
-        }
-        res.json(results);
-    });
-});
-
-app.put('/users/:username', (req, res) => {
-    const { username } = req.params;
-    const { password, firstName, lastName, email, registered, membership, signInDate, isSignedIn } = req.body;
-
-    if (!password && !firstName && !lastName && !email && registered === undefined) {
-        return res.status(400).json({ error: 'No data provided to update' });
+app.post("/check-email", (req, res) => {
+  const { loginID } = req.body;
+  const query = "SELECT COUNT(*) AS count FROM users WHERE email = ?";
+  db.query(query, [loginID], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error" });
     }
 
-    const checkUserApprovalQuery = 'SELECT registered FROM users WHERE username = ?';
-    db.query(checkUserApprovalQuery, [username], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to check user approval status' });
-        }
-
-        if (result.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        let updates = [];
-        let values = [];
-
-        if (password) {
-            updates.push('password = ?');
-            values.push(password);
-        }
-        if (firstName) {
-            updates.push('firstName = ?');
-            values.push(firstName);
-        }
-        if (lastName) {
-            updates.push('lastName = ?');
-            values.push(lastName);
-        }
-        if (email) {
-            updates.push('email = ?');
-            values.push(email);
-        }
-        if (registered !== undefined) {
-            updates.push('registered = ?');
-            values.push(registered);
-        }
-        if (membership !== undefined) {
-            updates.push('membership = ?');
-            values.push(membership);
-        }
-        if (signInDate !== undefined) {
-            updates.push('signInDate = ?');
-            values.push(signInDate);
-        }
-        if (isSignedIn !== undefined) {
-            updates.push('isSignedIn = ?');
-            values.push(isSignedIn);
-        }
-
-        if (updates.length === 0) {
-            return res.status(400).json({ error: 'No valid fields to update' });
-        }
-
-        const query = `UPDATE users SET ${updates.join(', ')} WHERE username = ?`;
-        values.push(username);
-
-        db.query(query, values, (err, result) => {
-            if (err) {
-                return res.status(500).json({ error: 'Database error', details: err });
-            }
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-
-            res.json({ message: 'User updated successfully' });
-        });
-    });
-});
-
-app.post('/users/validate', (req, res) => {
-    const { username, password } = req.body;
-
-    const sql = 'SELECT password, registered, isSignedIn FROM users WHERE username = ?';
-    db.query(sql, [username], (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: 'Database error' });
-        }
-
-        if (results.length === 0) {
-            return res.status(404).json({ error: `User '${username}' not found` });
-        }
-
-        const user = results[0];
-
-        if (user.password !== password) {
-            return res.status(401).json({ error: 'Incorrect password' });
-        }
-
-        if (user.registered !== 1) {
-            return res.status(403).json({ error: `${username} is not registered. Please verify your email.` });
-        }
-
-        if (user.isSignedIn !== 1) {
-            return res.status(403).json({ error: `${username} is not signed in. Please sign in first.` });
-        }
-
-        return res.status(200).json({ message: `${username} validated successfully` });
-    });
-});
-
-app.post('/admin/reset-signedin', (req, res) => {
-    const sql = 'UPDATE users SET isSignedIn = 0';
-  
-    db.query(sql, (err, result) => {
-      if (err) {
-        console.error('Error resetting users:', err);
-        return res.status(500).json({ error: 'Database error while resetting users' });
-      }
-  
-      return res.status(200).json({ message: 'All users have been signed out successfully.' });
-    });
+    const emailExists = result[0].count > 0;
+    res.json({ exists: emailExists });
   });
-  
+});
 
-app.put('/update-signin-status', (req, res) => {
-    const { loginID, isSignedIn } = req.body;
-  
-    const query = 'UPDATE users SET isSignedIn = ? WHERE email = ?';  
-    db.query(query, [isSignedIn, loginID], (err, result) => {
+app.get("/users", (req, res) => {
+  const sql =
+    "SELECT username, password, firstName, lastName, email, registered, membership, signInDate, isSignedIn FROM users";
+  db.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch users" });
+    }
+    res.json(results);
+  });
+});
+
+app.put("/users/:username", (req, res) => {
+  const { username } = req.params;
+  const {
+    password,
+    firstName,
+    lastName,
+    email,
+    registered,
+    membership,
+    signInDate,
+    isSignedIn,
+  } = req.body;
+
+  if (
+    !password &&
+    !firstName &&
+    !lastName &&
+    !email &&
+    registered === undefined
+  ) {
+    return res.status(400).json({ error: "No data provided to update" });
+  }
+
+  const checkUserApprovalQuery =
+    "SELECT registered FROM users WHERE username = ?";
+  db.query(checkUserApprovalQuery, [username], (err, result) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ error: "Failed to check user approval status" });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    let updates = [];
+    let values = [];
+
+    if (password) {
+      updates.push("password = ?");
+      values.push(password);
+    }
+    if (firstName) {
+      updates.push("firstName = ?");
+      values.push(firstName);
+    }
+    if (lastName) {
+      updates.push("lastName = ?");
+      values.push(lastName);
+    }
+    if (email) {
+      updates.push("email = ?");
+      values.push(email);
+    }
+    if (registered !== undefined) {
+      updates.push("registered = ?");
+      values.push(registered);
+    }
+    if (membership !== undefined) {
+      updates.push("membership = ?");
+      values.push(membership);
+    }
+    if (signInDate !== undefined) {
+      updates.push("signInDate = ?");
+      values.push(signInDate);
+    }
+    if (isSignedIn !== undefined) {
+      updates.push("isSignedIn = ?");
+      values.push(isSignedIn);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+
+    const query = `UPDATE users SET ${updates.join(", ")} WHERE username = ?`;
+    values.push(username);
+
+    db.query(query, values, (err, result) => {
       if (err) {
-        return res.status(500).json({ error: 'Failed to update sign-in status' });
+        return res.status(500).json({ error: "Database error", details: err });
       }
-  
+
       if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(404).json({ error: "User not found" });
       }
-  
-      res.json({ success: true });
+
+      res.json({ message: "User updated successfully" });
     });
   });
-  
+});
 
+app.post("/users/validate", (req, res) => {
+  const { username, password } = req.body;
+
+  const sql =
+    "SELECT password, registered, isSignedIn FROM users WHERE username = ?";
+  db.query(sql, [username], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: `User '${username}' not found` });
+    }
+
+    const user = results[0];
+
+    if (user.password !== password) {
+      return res.status(401).json({ error: "Incorrect password" });
+    }
+
+    if (user.registered !== 1) {
+      return res
+        .status(403)
+        .json({
+          error: `${username} is not registered. Please verify your email.`,
+        });
+    }
+
+    if (user.isSignedIn !== 1) {
+      return res
+        .status(403)
+        .json({ error: `${username} is not signed in. Please sign in first.` });
+    }
+
+    return res
+      .status(200)
+      .json({ message: `${username} validated successfully` });
+  });
+});
+
+app.post("/admin/reset-signedin", (req, res) => {
+  const sql = "UPDATE users SET isSignedIn = 0";
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("Error resetting users:", err);
+      return res
+        .status(500)
+        .json({ error: "Database error while resetting users" });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "All users have been signed out successfully." });
+  });
+});
+
+app.put("/update-signin-status", (req, res) => {
+  const { loginID, isSignedIn } = req.body;
+
+  const query = "UPDATE users SET isSignedIn = ? WHERE email = ?";
+  db.query(query, [isSignedIn, loginID], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to update sign-in status" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ success: true });
+  });
+});
 
 // Delete User
-app.delete('/users/:username', (req, res) => {
-    const { username } = req.params;
-    const sql = 'DELETE FROM users WHERE username = ?';
-    db.query(sql, [username], (err, result) => {
-        if (err) return res.status(500).json({ error: 'Error deleting user' });
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        res.json({ message: 'User deleted successfully' });
-    });
+app.delete("/users/:username", (req, res) => {
+  const { username } = req.params;
+  const sql = "DELETE FROM users WHERE username = ?";
+  db.query(sql, [username], (err, result) => {
+    if (err) return res.status(500).json({ error: "Error deleting user" });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json({ message: "User deleted successfully" });
+  });
 });
 
 let courts = {
-    "Paris": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "London": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "Berlin": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "Tokyo": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "New Delhi": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "Jakarta": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "Beijing": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "Toronto": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "New York": { timeLeft: 600, currentPlayers: [], queue: [] },
-    "Rest Area": { timeLeft: 600, currentPlayers: [], queue: [] }
+  Paris: { timeLeft: 600, currentPlayers: [], queue: [] },
+  London: { timeLeft: 600, currentPlayers: [], queue: [] },
+  Berlin: { timeLeft: 600, currentPlayers: [], queue: [] },
+  Tokyo: { timeLeft: 600, currentPlayers: [], queue: [] },
+  "New Delhi": { timeLeft: 600, currentPlayers: [], queue: [] },
+  Jakarta: { timeLeft: 600, currentPlayers: [], queue: [] },
+  Beijing: { timeLeft: 600, currentPlayers: [], queue: [] },
+  Toronto: { timeLeft: 600, currentPlayers: [], queue: [] },
+  "New York": { timeLeft: 600, currentPlayers: [], queue: [] },
+  "Rest Area": { timeLeft: 600, currentPlayers: [], queue: [] },
 };
 
-
 function startCourtTimers() {
-    setInterval(() => {
-        Object.keys(courts).forEach(court => {
-            const courtData = courts[court];
-            if (courtData.currentPlayers.length > 0 && courtData.timeLeft > 0) {
-                courtData.timeLeft--; 
-            } else if (courtData.timeLeft === 0 && courtData.queue.length > 0) {
-                courtData.currentPlayers = courtData.queue.shift();
-                courtData.timeLeft = 20; // Reset the timer 
-            }
-        });
-    }, 1000); 
+  setInterval(() => {
+    Object.keys(courts).forEach((court) => {
+      const courtData = courts[court];
+      if (courtData.currentPlayers.length > 0 && courtData.timeLeft > 0) {
+        courtData.timeLeft--;
+      } else if (courtData.timeLeft === 0 && courtData.queue.length > 0) {
+        courtData.currentPlayers = courtData.queue.shift();
+        courtData.timeLeft = 20; // Reset the timer
+      }
+    });
+  }, 1000);
 }
 
 startCourtTimers();
 
-app.get('/courts', (req, res) => {
-    res.json(courts);
+app.get("/courts", (req, res) => {
+  res.json(courts);
 });
 
-app.post('/update-courts', (req, res) => {
-    courts = req.body;
-    res.json({ message: 'Court data updated successfully.' });
+app.post("/update-courts", (req, res) => {
+  courts = req.body;
+  res.json({ message: "Court data updated successfully." });
 });
 
-app.post('/unbook-court', async (req, res) => {
-    const { courtId, playersToRemove } = req.body;
-  
-    if (!courtId || !Array.isArray(playersToRemove) || playersToRemove.length === 0) {
-      return res.status(400).send("Court ID and players to remove are required.");
-    }
-  
-    try {
-      const court = courts[courtId];
-      if (!court) {
-        return res.status(404).send('Court not found.');
-      }
-  
-      let removedPlayers = [];
-  
-      for (const player of playersToRemove) {
-        const playerIndex = court.currentPlayers.indexOf(player);
-        if (playerIndex !== -1) {
-          court.currentPlayers.splice(playerIndex, 1);
-          removedPlayers.push(player);
-        } else {
-          console.log(`Player ${player} is not booked on this court.`);
-        }
-      }
-  
-      if (removedPlayers.length === 0) {
-        return res.status(400).send('No players were removed.');
-      }
-  
-      const removeQuery = 'DELETE FROM court_players WHERE user_id IN (?) AND court_id = ?';
-      const [result] = await db.promise().query(removeQuery, [playersToRemove, courtId]);
-  
-      if (result.affectedRows === 0) {
-        return res.status(500).send('Failed to remove players from the database.');
-      }
-  
-      res.status(200).json({
-        message: 'Players removed successfully',
-        removedPlayers,
-        courtState: court
-      });
-  
-    } catch (error) {
-      console.error('Error unbooking players:', error);
-      res.status(500).send('Error unbooking players.');
-    }
-  });
-  
+app.post("/unbook-court", async (req, res) => {
+  const { courtId, playersToRemove } = req.body;
 
+  if (
+    !courtId ||
+    !Array.isArray(playersToRemove) ||
+    playersToRemove.length === 0
+  ) {
+    return res.status(400).send("Court ID and players to remove are required.");
+  }
 
+  try {
+    const court = courts[courtId];
+    if (!court) {
+      return res.status(404).send("Court not found.");
+    }
+
+    let removedPlayers = [];
+
+    for (const player of playersToRemove) {
+      const playerIndex = court.currentPlayers.indexOf(player);
+      if (playerIndex !== -1) {
+        court.currentPlayers.splice(playerIndex, 1);
+        removedPlayers.push(player);
+      } else {
+        console.log(`Player ${player} is not booked on this court.`);
+      }
+    }
+
+    if (removedPlayers.length === 0) {
+      return res.status(400).send("No players were removed.");
+    }
+
+    const removeQuery =
+      "DELETE FROM court_players WHERE user_id IN (?) AND court_id = ?";
+    const [result] = await db
+      .promise()
+      .query(removeQuery, [playersToRemove, courtId]);
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(500)
+        .send("Failed to remove players from the database.");
+    }
+
+    res.status(200).json({
+      message: "Players removed successfully",
+      removedPlayers,
+      courtState: court,
+    });
+  } catch (error) {
+    console.error("Error unbooking players:", error);
+    res.status(500).send("Error unbooking players.");
+  }
+});
 
 // Remove player from a court
-app.delete('/remove-player/:playerId', async (req, res) => {
-    const playerId = req.params.playerId;  
+app.delete("/remove-player/:playerId", async (req, res) => {
+  const playerId = req.params.playerId;
 
-    try {
-        const [result] = await db.promise().query('SELECT * FROM court_players WHERE player_id = ?', [playerId]);
+  try {
+    const [result] = await db
+      .promise()
+      .query("SELECT * FROM court_players WHERE player_id = ?", [playerId]);
 
-        if (result.length === 0) {
-            return res.status(404).send('Player not found.');
-        }
-
-        await db.promise().query('DELETE FROM court_players WHERE player_id = ?', [playerId]);
-
-        res.status(200).send('Player removed successfully!');
-    } catch (error) {
-        console.error('Error removing player:', error);
-        res.status(500).send('Error removing player.');
+    if (result.length === 0) {
+      return res.status(404).send("Player not found.");
     }
-});
 
+    await db
+      .promise()
+      .query("DELETE FROM court_players WHERE player_id = ?", [playerId]);
+
+    res.status(200).send("Player removed successfully!");
+  } catch (error) {
+    console.error("Error removing player:", error);
+    res.status(500).send("Error removing player.");
+  }
+});
 
 let pendingLogins = [];
 let approvedLogins = [];
 
 app.post("/login", (req, res) => {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    if (!email) {
-        return res.status(400).json({ message: "Email is required" });
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  console.log(`Login attempt for email: ${email}`);
+
+  const sql =
+    "SELECT email, status, password, isSignedIn FROM users WHERE email = ?";
+  db.query(sql, [email], (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ error: "Database query failed" });
     }
 
-    console.log(`Login attempt for email: ${email}`);
+    console.log("Query results:", results);
 
-    const sql = 'SELECT email, status, password, isSignedIn FROM users WHERE email = ?';
-    db.query(sql, [email], (err, results) => {
+    if (results.length === 0) {
+      return res.status(404).json({ status: "failed" });
+    }
+
+    const user = results[0];
+
+    if (user.isSignedIn === 0) {
+      // If isSignedIn is 0, change status to "pending" and update signInDate
+      const updateSql =
+        'UPDATE users SET status = "pending", signInDate = NOW() WHERE email = ?';
+      db.query(updateSql, [email], (err, updateResults) => {
         if (err) {
-            console.error('Database query error:', err);
-            return res.status(500).json({ error: 'Database query failed' });
+          console.error("Failed to update status:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to update user status" });
         }
-
-        console.log('Query results:', results);
-
-        if (results.length === 0) {
-            return res.status(404).json({ status: "failed" });
+        return res.status(200).json({ status: "pending" });
+      });
+    } else if (user.isSignedIn === 1) {
+      const updateSql =
+        'UPDATE users SET status = "approved", signInDate = NOW() WHERE email = ?';
+      db.query(updateSql, [email], (err, updateResults) => {
+        if (err) {
+          console.error("Failed to update status:", err);
+          return res
+            .status(500)
+            .json({ error: "Failed to update user status" });
         }
-
-        const user = results[0];
-
-        if (user.isSignedIn === 0) {
-            // If isSignedIn is 0, change status to "pending" and update signInDate
-            const updateSql = 'UPDATE users SET status = "pending", signInDate = NOW() WHERE email = ?';
-            db.query(updateSql, [email], (err, updateResults) => {
-                if (err) {
-                    console.error('Failed to update status:', err);
-                    return res.status(500).json({ error: 'Failed to update user status' });
-                }
-                return res.status(200).json({ status: "pending" });
-            });
-        } else if (user.isSignedIn === 1) {
-            const updateSql = 'UPDATE users SET status = "approved", signInDate = NOW() WHERE email = ?';
-            db.query(updateSql, [email], (err, updateResults) => {
-                if (err) {
-                    console.error('Failed to update status:', err);
-                    return res.status(500).json({ error: 'Failed to update user status' });
-                }
-                return res.json({ status: "approved", password: user.password });
-            });
-        }
-    });
+        return res.json({ status: "approved", password: user.password });
+      });
+    }
+  });
 });
 
+app.post("/check-status", (req, res) => {
+  const { email } = req.body;
 
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  console.log(`Checking status for email: ${email}`);
+
+  const sql =
+    "SELECT email, status, password, isSignedIn FROM users WHERE email = ?";
+  db.query(sql, [email], (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ error: "Database query failed" });
+    }
+
+    if (results.length === 0) {
+      return res
+        .status(404)
+        .json({
+          status: "failed",
+          message: "Email not found. Please register first.",
+        });
+    }
+
+    const user = results[0];
+
+    if (user.isSignedIn === 1 && user.status === "approved") {
+      return res.json({ status: "approved", password: user.password });
+    }
+
+    if (user.isSignedIn === 0 && user.status === "pending") {
+      return res.json({ status: "pending" });
+    }
+
+    return res
+      .status(400)
+      .json({ status: "failed", message: "Unexpected status or state." });
+  });
+});
 
 // Admin fetch pending users
 app.get("/admin/pending", (req, res) => {
-    const sql = 'SELECT username, email FROM users WHERE status = "pending"';
-    db.query(sql, (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database query failed' });
-      }
-      res.json(results);
-    });
-  });
-  
-  app.post("/admin/approve", (req, res) => {
-    const { username } = req.body;
-
-    if (!username) {
-        return res.status(400).json({ message: "Username is required" });
+  const sql = 'SELECT username, email FROM users WHERE status = "pending"';
+  db.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Database query failed" });
     }
-
-    generateRandomPassword((newPassword) => {
-        const sql = 'UPDATE users SET password = ?, status = "approved", isSignedIn = 1 WHERE username = ?';
-        db.query(sql, [newPassword, username], (err, results) => {
-            if (err) {
-                return res.status(500).json({ error: 'Database query failed' });
-            }
-
-            res.status(200).json({ status: "approved", newPassword });
-        });
-    });
+    res.json(results);
+  });
 });
-  
-  // Admin denies the user
-  app.post("/admin/deny", (req, res) => {
-    const { username } = req.body;
-  
-    if (!username) {
-      return res.status(400).json({ message: "Username is required" });
-    }
-  
-    const sql = 'UPDATE users SET status = "denied" WHERE username = ?';
-    db.query(sql, [username], (err, results) => {
+
+app.post("/admin/approve", (req, res) => {
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ message: "Username is required" });
+  }
+
+  generateRandomPassword((newPassword) => {
+    const sql =
+      'UPDATE users SET password = ?, status = "approved", isSignedIn = 1 WHERE username = ?';
+    db.query(sql, [newPassword, username], (err, results) => {
       if (err) {
-        return res.status(500).json({ error: 'Database query failed' });
+        return res.status(500).json({ error: "Database query failed" });
       }
-  
-      res.status(200).json({ status: "denied" });
+
+      res.status(200).json({ status: "approved", newPassword });
     });
   });
-  
+});
+
+// Admin denies the user
+app.post("/admin/deny", (req, res) => {
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ message: "Username is required" });
+  }
+
+  const sql = 'UPDATE users SET status = "denied" WHERE username = ?';
+  db.query(sql, [username], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Database query failed" });
+    }
+
+    res.status(200).json({ status: "denied" });
+  });
+});
 
 app.use(express.static(__dirname));
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-

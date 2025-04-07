@@ -39,18 +39,16 @@ async function login() {
         return;
     }
 
-    // Send the login request to the server
-    const response = await fetch("/login", {
+    let response = await fetch("/login", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email }), 
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json" 
         }
     });
 
-    const result = await response.json();
+    let result = await response.json();
 
-    // Handle the result based on the user's status
     if (result.status === "approved") {
         Swal.fire({
             icon: 'success',
@@ -58,15 +56,41 @@ async function login() {
             html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
         })
         .then(() => {
-            // Redirect after SweetAlert
-            window.location.href = "booking.html";
+            window.location.href = "main.html";
         });
     } else if (result.status === "pending") {
-      Swal.fire({
+        const pendingPopup = Swal.fire({
             icon: 'info',
             title: 'Pending Approval',
-            text: 'Your login request is pending approval by the admin.'
-        })
+            text: 'Your login request is pending approval by the admin.',
+            allowOutsideClick: false, 
+            showCancelButton: false, 
+            showConfirmButton: false 
+        });
+
+        const intervalId = setInterval(async () => {
+            response = await fetch("/check-status", { 
+                method: "POST", 
+                body: JSON.stringify({ email }), 
+                headers: { "Content-Type": "application/json" } 
+            });
+
+            result = await response.json();
+
+            if (result.status === "approved") {
+                clearInterval(intervalId); 
+                pendingPopup.close(); 
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Login Approved',
+                    html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
+                })
+                .then(() => {
+                    window.location.href = "main.html";
+                });
+            }
+        }, 1000); 
     } else {
         Swal.fire({
             icon: 'error',
@@ -75,6 +99,7 @@ async function login() {
         });
     }
 }
+
 
     function goToHome() {
       window.location.href = "main.html";
