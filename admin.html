@@ -11,7 +11,14 @@
     <!-- <h1>Admin Login Requests</h1>
     <div id="pendingLogins"></div> -->
     <h2 id="registeredUsersHeading">All Registered Users</h2>
-    <button onclick="resetAllUsers()">Reset Sign In</button>
+    <div class="admin-drop">
+    <label for="adminActions">Admin Actions:</label>
+<select id="adminActions">
+  <option value="">-- Select an action --</option>
+  <option value="resetSignIn">Reset Sign In</option>
+</select>
+<button id="confirmResetBtn" style="display: none;">Reset Sign In</button>
+</div>
     <div id="userList"></div>
     <div class="userInfo">
       <div class="userLeft">
@@ -88,6 +95,9 @@
             "The user login has been approved.",
             "success"
           );
+          setTimeout(function() {
+    window.location.reload();
+  }, 4000); 
         }
       }
 
@@ -112,20 +122,6 @@
     <script>
       showUsers();
       renderCourts();
-    </script>
-    <script>
-      function goFullscreen() {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-          elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) {
-          // Safari
-          elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-          // IE11
-          elem.msRequestFullscreen();
-        }
-      }
     </script>
     <script>
       const now = new Date();
@@ -155,5 +151,49 @@
         }
       }
     </script>
+    <script>
+      const adminActionsDropdown = document.getElementById("adminActions");
+      const confirmResetBtn = document.getElementById("confirmResetBtn");
+    
+      adminActionsDropdown.addEventListener("change", function () {
+        if (this.value === "resetSignIn") {
+          confirmResetBtn.style.display = "inline-block";
+        } else {
+          confirmResetBtn.style.display = "none";
+        }
+      });
+    
+      confirmResetBtn.addEventListener("click", async function () {
+        const confirmation = await Swal.fire({
+          title: "Are you sure?",
+          text: "This will reset all signed-in users.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Yes, reset it!",
+          cancelButtonText: "Cancel",
+        });
+    
+        if (confirmation.isConfirmed) {
+          try {
+            const response = await fetch("/admin/reset-signedin", {
+              method: "POST",
+            });
+    
+            const result = await response.json();
+    
+            if (response.ok) {
+              Swal.fire("Reset!", result.message, "success").then(() => {
+                location.reload();
+              });
+            } else {
+              Swal.fire("Failed", "Failed to reset users.", "error");
+            }
+          } catch (error) {
+            console.error("Error:", error);
+            Swal.fire("Error", "Something went wrong.", "error");
+          }
+        }
+      });
+    </script>    
   </body>
 </html>

@@ -307,5 +307,12 @@ button {
     background-color: #d32f2f; 
   }
   
-  
+  .admin-drop {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    position: absolute;
+    right: 30px;
+    top: 150px;
+  }
 

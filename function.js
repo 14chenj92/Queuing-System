@@ -533,7 +533,7 @@ function renderCourts() {
   let lastRow = "";
   let courtCount = 1;
 
-  const isAdminPage = window.location.pathname.includes("admin.html"); // Check if it's the admin page
+  const isAdminPage = window.location.pathname.includes("admin.html");
 
   const courtEntries = Object.entries(courts);
 
@@ -563,11 +563,11 @@ function renderCourts() {
         .toString()
         .padStart(2, "0")}</p>`;
     }
-
+    if (court !== "Rest Area") {
     courtDisplay += `<p>Current Players: ${
       details.currentPlayers.join(", ") || "None"
     }</p>`;
-
+  }
     if (isAdminPage) {
       details.currentPlayers.forEach((player, index) => {
         courtDisplay += `<p>Player ${
@@ -578,12 +578,13 @@ function renderCourts() {
       });
     }
 
-    for (let i = 0; i < 3; i++) {
-      courtDisplay += `<p>Queue ${i + 1}: ${
-        details.queue[i] ? details.queue[i].join(", ") : "Empty"
-      }</p>`;
+    if (court !== "Rest Area") {
+      for (let i = 0; i < 3; i++) {
+        courtDisplay += `<p>Queue ${i + 1}: ${
+          details.queue[i] ? details.queue[i].join(", ") : "Empty"
+        }</p>`;
+      }
     }
-
     courtDisplay += `</div>`;
 
     if (index < 3) {
@@ -610,7 +611,6 @@ function removePlayer(playerIndex) {
   if (playerName) {
     courtData.currentPlayers.splice(playerIndex - 1, 1);
 
-    // If there's someone in the queue, move them to current players
     if (courtData.queue && courtData.queue.length > 0) {
       const nextPlayer = courtData.queue.shift();
       courts[court].timeLeft = 600; 
