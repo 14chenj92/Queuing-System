@@ -531,16 +531,16 @@ app.delete("/users/:username", (req, res) => {
 });
 
 let courts = {
-  Paris: { timeLeft: 600, currentPlayers: [], queue: [] },
-  London: { timeLeft: 600, currentPlayers: [], queue: [] },
-  Berlin: { timeLeft: 600, currentPlayers: [], queue: [] },
-  Tokyo: { timeLeft: 600, currentPlayers: [], queue: [] },
-  "New Delhi": { timeLeft: 600, currentPlayers: [], queue: [] },
-  Jakarta: { timeLeft: 600, currentPlayers: [], queue: [] },
-  Beijing: { timeLeft: 600, currentPlayers: [], queue: [] },
-  Toronto: { timeLeft: 600, currentPlayers: [], queue: [] },
-  "New York": { timeLeft: 600, currentPlayers: [], queue: [] },
-  "Rest Area": { timeLeft: 600, currentPlayers: [], queue: [] },
+  Paris: { timeLeft: 1800, currentPlayers: [], queue: [] },
+  London: { timeLeft: 1800, currentPlayers: [], queue: [] },
+  Berlin: { timeLeft: 1800, currentPlayers: [], queue: [] },
+  Tokyo: { timeLeft: 1800, currentPlayers: [], queue: [] },
+  "New Delhi": { timeLeft: 1800, currentPlayers: [], queue: [] },
+  Jakarta: { timeLeft: 1800, currentPlayers: [], queue: [] },
+  Beijing: { timeLeft: 1800, currentPlayers: [], queue: [] },
+  Toronto: { timeLeft: 1800, currentPlayers: [], queue: [] },
+  "New York": { timeLeft: 1800, currentPlayers: [], queue: [] },
+  "Rest Area": { timeLeft: 1800, currentPlayers: [], queue: [] },
 };
 
 function startCourtTimers() {

@@ -345,7 +345,7 @@ async function bookCourt() {
 
   if (courts[court].currentPlayers.length === 0) {
     courts[court].currentPlayers = enteredPlayers;
-    courts[court].timeLeft = 600;
+    courts[court].timeLeft = 1800;
     startCountdown(court);
   } else {
     if (courts[court].queue.length < 3) {
@@ -440,7 +440,7 @@ async function unbookCourt() {
         if (courtBooking.queue.length > 0) {
           const nextQueue = courtBooking.queue.shift();
           courtBooking.currentPlayers = nextQueue;
-          courtBooking.timeLeft = 600;
+          courtBooking.timeLeft = 1800;
           startCountdown(courtName);
         }
       }
@@ -510,7 +510,7 @@ function startCountdown(court) {
       courts[court].currentPlayers = [];
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].timeLeft = 600;
+        courts[court].timeLeft = 1800;
         startCountdown(court);
       }
       renderCourts();
@@ -613,7 +613,7 @@ function removePlayer(playerIndex) {
 
     if (courtData.queue && courtData.queue.length > 0) {
       const nextPlayer = courtData.queue.shift();
-      courts[court].timeLeft = 600; 
+      courts[court].timeLeft = 1800; 
       courtData.currentPlayers.push(...nextPlayer);  // Add each player to court
 
       resetCourtTimer(court); 
