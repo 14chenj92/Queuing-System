@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <button onclick="goToHome()" class="back-button">⬅ Back </button>
   <div class="booking-area">
   <div class="court-area">
   <h2>Court Status</h2>
@@ -88,11 +87,13 @@
   <script>
     renderCourts();
   </script>
-  <script>
-    function goToHome() {
-      window.location.href = "main.html";
+    <script>
+  window.addEventListener("storage", function (event) {
+    if (event.key === "courtsData") {
+      location.reload();
     }
-  </script>  
+  });
+  </script>
   <script src="script.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
 </body>

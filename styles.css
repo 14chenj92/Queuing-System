@@ -235,7 +235,7 @@ button {
     display: inline-block;
     width: 8em;
     height: 2.6em;
-    margin: 20px;
+    /* margin: 20px; */
     position: relative;
     cursor: pointer;
     overflow: hidden;
@@ -316,3 +316,10 @@ button {
     top: 150px;
   }
 
+  .court-card-admin {
+    width: 650px; 
+    min-height: 400px;
+    font-size: 1.1rem;
+    padding: 20px;
+    margin: 15px;
+  }

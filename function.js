@@ -343,10 +343,25 @@ async function bookCourt() {
     return;
   }
 
-  if (courts[court].currentPlayers.length === 0) {
+  const currentPlayers = courts[court].currentPlayers;
+
+  if (currentPlayers.length === 0) {
     courts[court].currentPlayers = enteredPlayers;
     courts[court].timeLeft = 1800;
     startCountdown(court);
+  } else if (currentPlayers.length === 2 && enteredPlayers.length === 2) {
+    const totalPlayers = [...currentPlayers, ...enteredPlayers];
+  
+    const uniquePlayers = new Set(totalPlayers);
+    if (uniquePlayers.size < totalPlayers.length) {
+      Swal.fire({
+        icon: "error",
+        title: "A player is already on this court.",
+      });
+      return;
+    }
+  
+    courts[court].currentPlayers = totalPlayers;
   } else {
     if (courts[court].queue.length < 3) {
       courts[court].queue.push(enteredPlayers);
@@ -547,7 +562,9 @@ function renderCourts() {
       courtStatusClass += " unavailable"; // Mark Las Vegas as unavailable
     }
 
-    let courtDisplay = `<div class="court-card ${courtStatusClass}">`;
+    const adminClass = isAdminPage ? "court-card-admin" : "";
+let courtDisplay = `<div class="court-card ${courtStatusClass} ${adminClass}">`;
+
     courtDisplay += `<h3>${court}</h3>`;
 
     const statusText =
