@@ -54,12 +54,16 @@ async function login() {
             icon: 'success',
             title: 'Login Approved',
             html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
-        })
-        .then(() => {
+        }).then(() => {
             window.location.href = "main.html";
         });
+
     } else if (result.status === "pending") {
-        const pendingPopup = Swal.fire({
+        // Declare globally to access inside interval
+        let intervalId;
+
+        // Show pending popup
+        Swal.fire({
             icon: 'info',
             title: 'Pending Approval',
             text: 'Your login request is pending approval by the admin.',
@@ -68,29 +72,51 @@ async function login() {
             showConfirmButton: false 
         });
 
-        const intervalId = setInterval(async () => {
-            response = await fetch("/check-status", { 
+        // Start polling for approval or denial
+        intervalId = setInterval(async () => {
+            let response = await fetch("/check-status", { 
                 method: "POST", 
                 body: JSON.stringify({ email }), 
                 headers: { "Content-Type": "application/json" } 
             });
 
-            result = await response.json();
+            let result = await response.json();
 
             if (result.status === "approved") {
-                clearInterval(intervalId); 
-                pendingPopup.close(); 
+                clearInterval(intervalId);
+                Swal.close(); // Close the pending popup
 
                 Swal.fire({
                     icon: 'success',
                     title: 'Login Approved',
                     html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
-                })
-                .then(() => {
+                }).then(() => {
                     window.location.href = "main.html";
                 });
+
+            } else if (result.status === "denied") {
+                clearInterval(intervalId);
+                Swal.close(); // Close the pending popup
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Login Denied',
+                    text: 'Your login request was denied by the admin. Please see the front desk.',
+                }).then(() => {
+                    window.location.href = "login.html";
+                });
             }
-        }, 1000); 
+        }, 1000);
+
+    } else if (result.status === "denied") {
+        Swal.fire({
+            icon: 'error',
+            title: 'Login Denied',
+            text: 'Your login request was denied by the admin. Please see the front desk.',
+        }).then(() => {
+            window.location.href = "login.html";
+        });
+
     } else {
         Swal.fire({
             icon: 'error',
@@ -99,7 +125,6 @@ async function login() {
         });
     }
 }
-
 
     function goToHome() {
       window.location.href = "main.html";

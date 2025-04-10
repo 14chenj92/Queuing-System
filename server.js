@@ -741,6 +741,10 @@ app.post("/check-status", (req, res) => {
       return res.json({ status: "pending" });
     }
 
+    if (user.isSignedIn === 0 && user.status === "denied") {
+      return res.json({ status: "denied" });
+    }
+
     return res
       .status(400)
       .json({ status: "failed", message: "Unexpected status or state." });
