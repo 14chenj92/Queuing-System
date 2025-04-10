@@ -191,6 +191,8 @@ function editUser(username) {
   let newPassword = prompt(
     `Enter new password for ${username} (leave blank to keep unchanged):`
   );
+
+  
   // let newFirstName = prompt(
   //   `Enter new first name for ${username} (leave blank to keep unchanged):`
   // );
@@ -224,7 +226,10 @@ function editUser(username) {
   if (newPassword) updatedData.password = newPassword;
   // if (newFirstName) updatedData.firstName = newFirstName;
   // if (newLastName) updatedData.lastName = newLastName;
-  if (newEmail) updatedData.email = newEmail;
+  if (newEmail) {
+    updatedData.email = newEmail;
+    updatedData.username = newEmail;
+  }
   if (newMembership) updatedData.membership = newMembership;
   // if (newSignInDate) updatedData.signInDate = newSignInDate;
   updatedData.isSignedIn = newIsSignedIn;

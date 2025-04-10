@@ -404,6 +404,8 @@ app.put("/users/:username", (req, res) => {
     if (email) {
       updates.push("email = ?");
       values.push(email);
+      updates.push("username = ?");
+      values.push(email);
     }
     if (registered !== undefined) {
       updates.push("registered = ?");
