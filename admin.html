@@ -47,78 +47,80 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
 
     <script>
-      setInterval(async () => {
-        const response = await fetch("/admin/pending");
-        const pendingLogins = await response.json();
-
-        console.log("Pending Logins:", pendingLogins);
-
-        if (pendingLogins.length > 0) {
-          const login = pendingLogins[0];
-          console.log("Login to approve/deny:", login);
-
-          const result = await Swal.fire({
-            title: `New login request from ${login.username}`,
-            text: `Do you want to approve or deny this login request?`,
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "Approve",
-            cancelButtonText: "Deny",
-          });
-
-          console.log(result);
-
-          if (result.isConfirmed) {
-            approveLogin(login.username);
-          } else {
-            denyLogin(login.username);
+      let isDialogOpen = false;
+      const handledUsers = new Set();
+    
+      const interval = setInterval(async () => {
+        if (isDialogOpen) return;
+    
+        try {
+          const response = await fetch("/admin/pending");
+          const pendingLogins = await response.json();
+    
+          if (pendingLogins.length > 0) {
+            const login = pendingLogins[0];
+            if (handledUsers.has(login.username)) return;
+    
+            isDialogOpen = true;
+    
+            const result = await Swal.fire({
+              title: `New login request from ${login.username}`,
+              text: `Do you want to approve or deny this login request?`,
+              icon: "question",
+              showCancelButton: true,
+              confirmButtonText: "Approve",
+              cancelButtonText: "Deny",
+            });
+    
+            if (result.isConfirmed) {
+              await approveLogin(login.username);
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+              await denyLogin(login.username);
+            }
+    
+            handledUsers.add(login.username);
+            isDialogOpen = false;
           }
+        } catch (err) {
+          console.error("Error:", err);
+          isDialogOpen = false;
         }
       }, 4000);
-
-      // Approve user login
+    
+      window.addEventListener("beforeunload", () => clearInterval(interval));
+    
       async function approveLogin(username) {
-        console.log("Approving login for:", username);
-
         const response = await fetch("/admin/approve", {
           method: "POST",
           body: JSON.stringify({ username }),
           headers: { "Content-Type": "application/json" },
         });
-
+    
         const result = await response.json();
-        console.log("Approve Response:", result);
-
+    
         if (result.status === "approved") {
-          Swal.fire(
-            "Approved!",
-            "The user login has been approved.",
-            "success"
-          );
-          setTimeout(function() {
-    window.location.reload();
-  }, 4000); 
+          Swal.fire("Approved!", "The user login has been approved.", "success");
+          setTimeout(() => {
+            window.location.reload();
+          }, 4000);
         }
       }
-
-      // Deny user login
+    
       async function denyLogin(username) {
-        console.log("Denying login for:", username);
-
         const response = await fetch("/admin/deny", {
           method: "POST",
           body: JSON.stringify({ username }),
           headers: { "Content-Type": "application/json" },
         });
-
+    
         const result = await response.json();
-        console.log("Deny Response:", result);
-
+    
         if (result.status === "denied") {
           Swal.fire("Denied!", "The user login has been denied.", "error");
         }
       }
     </script>
+    
     <script>
       showUsers();
       renderCourts();
