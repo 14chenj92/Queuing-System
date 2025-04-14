@@ -6,6 +6,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const http = require("http");
 
+const wordList = require('./words');
+
 const server = http.createServer(app);
 require("dotenv").config();
 
@@ -185,63 +187,7 @@ db.query(createCourtsTable, (err) => {
 });
 
 function generateRandomPassword(callback) {
-  const words = [
-    "bear",
-    "lion",
-    "wolf",
-    "frog",
-    "hawk",
-    "seal",
-    "deer",
-    "crow",
-    "cat",
-    "dog",
-    "fox",
-    "bird",
-    "fish",
-    "duck",
-    "moth",
-    "bee",
-    "rose",
-    "lily",
-    "daisy",
-    "iris",
-    "fern",
-    "ivy",
-    "bloom",
-    "gold",
-    "blue",
-    "pink",
-    "red",
-    "cyan",
-    "gray",
-    "aqua",
-    "teal",
-    "amber",
-    "peach",
-    "plum",
-    "green",
-    "snow",
-    "lava",
-    "sky",
-    "fire",
-    "wood",
-    "leaf",
-    "sand",
-    "stone",
-    "vibe",
-    "glow",
-    "bmw",
-    "kia",
-    "gmc",
-    "audi",
-    "ford",
-    "jeep",
-    "tesla",
-    "volvo",
-    "opel",
-    "mazda",
-  ];
+  const words = wordList
 
   const randomWord = words[Math.floor(Math.random() * words.length)];
 
@@ -486,7 +432,7 @@ app.post("/users/validate", (req, res) => {
 });
 
 app.post("/admin/reset-signedin", (req, res) => {
-  const sql = "UPDATE users SET isSignedIn = 0";
+  const sql = "UPDATE users SET isSignedIn = 0, password = ''";
 
   db.query(sql, (err, result) => {
     if (err) {
@@ -498,9 +444,10 @@ app.post("/admin/reset-signedin", (req, res) => {
 
     return res
       .status(200)
-      .json({ message: "All users have been signed out successfully." });
+      .json({ message: "All users have been signed out and passwords reset." });
   });
 });
+
 
 app.put("/update-signin-status", (req, res) => {
   const { loginID, isSignedIn } = req.body;
