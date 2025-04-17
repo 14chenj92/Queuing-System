@@ -6,15 +6,21 @@ function sendMail(event) {
 
     let verificationCode = Math.floor(100000 + Math.random() * 900000); 
     let email = document.getElementById("email").value;
+    let firstName = document.getElementById("firstName").value;
+    let lastName = document.getElementById("lastName").value;
+    let now = new Date();
+    let currentDate = now.toLocaleString();
 
     let params = {
         email: email,
-        code: verificationCode
+        code: verificationCode,
+        firstName: firstName,
+        lastName: lastName,
+        date: currentDate
     };
 
     emailjs.send("service_cuab1yr", "template_sidhjme", params)
         .then(() => {
-
             fetch("/save-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

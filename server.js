@@ -46,7 +46,7 @@ app.get("/", (req, res) => {
 
 // Save the code in the session
 app.post("/save-code", (req, res) => {
-  const { email, code } = req.body;
+  const { email, code, firstName, lastName, date } = req.body;
 
   if (!email || !code) {
     return res.status(400).send("Email and code are required.");
@@ -64,7 +64,7 @@ app.post("/save-code", (req, res) => {
 });
 
 app.post("/verify-code", (req, res) => {
-  const { email, code } = req.body;
+  const { email, code, firstName, lastName, date } = req.body;
   console.log("Verification code in session:", req.session.verificationCode);
   console.log("Email in session:", req.session.email);
 
