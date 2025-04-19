@@ -492,6 +492,8 @@ let courts = {
   "Rest Area": { timeLeft: 1800, currentPlayers: [], queue: [] },
 };
 
+let version = 0;
+
 function startCourtTimers() {
   setInterval(() => {
     Object.keys(courts).forEach((court) => {
@@ -509,12 +511,14 @@ function startCourtTimers() {
 startCourtTimers();
 
 app.get("/courts", (req, res) => {
-  res.json(courts);
+  res.json({ courts, version });
 });
 
 app.post("/update-courts", (req, res) => {
   courts = req.body;
-  res.json({ message: "Court data updated successfully." });
+  version++; 
+  console.log("Courts updated. New version:", version);
+  res.sendStatus(200);
 });
 
 app.post("/unbook-court", async (req, res) => {

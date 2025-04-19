@@ -497,27 +497,56 @@ function saveCourtData() {
   });
 }
 
+let currentVersion = null;
+
 function loadCourtData() {
   fetch("/courts")
     .then((response) => response.json())
     .then((data) => {
-      courts = data;
-      saveCourtData();
-      renderCourts();
-      Object.keys(courts).forEach((court) => {
-        if (
-          courts[court].currentPlayers.length > 0 &&
-          courts[court].timeLeft >= 0
-        ) {
-          startCountdown(court);
-        }
-      });
+      if (currentVersion === null) {
+        currentVersion = data.version;
+        courts = data.courts;
+        renderAndStart();
+      } else if (data.version !== currentVersion) {
+        location.reload(); 
+      }
     })
     .catch((err) => console.error("Error fetching courts:", err));
 }
 
+function renderAndStart() {
+  renderCourts();
+  Object.keys(courts).forEach((court) => {
+    if (
+      courts[court].currentPlayers.length > 0 &&
+      courts[court].timeLeft >= 0
+    ) {
+      startCountdown(court);
+    }
+  });
+}
+
+function setupInputPersistence() {
+  const inputs = document.querySelectorAll("input");
+  inputs.forEach((input) => {
+    input.addEventListener("input", () => {
+      localStorage.setItem(input.id, input.value);
+    });
+  });
+}
+
+function restoreInputs() {
+  const inputs = document.querySelectorAll("input");
+  inputs.forEach((input) => {
+    const savedValue = localStorage.getItem(input.id);
+    if (savedValue) input.value = savedValue;
+  });
+}
+
 window.onload = function () {
   loadCourtData();
+  setupInputPersistence();
+  restoreInputs();
 };
 
 function startCountdown(court) {
