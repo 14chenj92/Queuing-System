@@ -187,26 +187,11 @@ db.query(createCourtsTable, (err) => {
 });
 
 function generateRandomPassword(callback) {
-  const words = wordList
+  const words = wordList;
 
   const randomWord = words[Math.floor(Math.random() * words.length)];
 
-  db.query(
-    "SELECT password FROM users WHERE password = ?",
-    [randomWord],
-    (err, results) => {
-      if (err) {
-        console.error("Database error:", err);
-        return;
-      }
-
-      if (results.length > 0) {
-        generateRandomPassword(callback);
-      } else {
-        callback(randomWord);
-      }
-    }
-  );
+  callback(randomWord);
 }
 
 // Routes
