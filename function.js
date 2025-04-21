@@ -526,27 +526,8 @@ function renderAndStart() {
   });
 }
 
-function setupInputPersistence() {
-  const inputs = document.querySelectorAll("input");
-  inputs.forEach((input) => {
-    input.addEventListener("input", () => {
-      localStorage.setItem(input.id, input.value);
-    });
-  });
-}
-
-function restoreInputs() {
-  const inputs = document.querySelectorAll("input");
-  inputs.forEach((input) => {
-    const savedValue = localStorage.getItem(input.id);
-    if (savedValue) input.value = savedValue;
-  });
-}
-
 window.onload = function () {
   loadCourtData();
-  setupInputPersistence();
-  restoreInputs();
 };
 
 function startCountdown(court) {
