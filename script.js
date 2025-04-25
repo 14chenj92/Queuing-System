@@ -64,7 +64,7 @@ function verifyCode(event) {
         console.error("Error verifying code:", error);
         Swal.fire({
             title: "Error",
-            text: "An error occurred while verifying the code.",
+            text: "An error occurred while verifying the code. Click on Send Email again to resend the code.",
             icon: "error",
             confirmButtonText: "OK"
         });
