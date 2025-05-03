@@ -6,17 +6,17 @@ function sendMail(event) {
 
     let verificationCode = Math.floor(100000 + Math.random() * 900000); 
     let email = document.getElementById("email").value;
-    // let firstName = document.getElementById("firstName").value;
-    // let lastName = document.getElementById("lastName").value;
-    // let now = new Date();
-    // let currentDate = now.toLocaleString();
+    let firstName = document.getElementById("firstName").value;
+    let lastName = document.getElementById("lastName").value;
+    let now = new Date();
+    let currentDate = now.toLocaleString();
 
     let params = {
         email: email,
         code: verificationCode,
-        // firstName: firstName,
-        // lastName: lastName,
-        // date: currentDate
+        firstName: firstName,
+        lastName: lastName,
+        date: currentDate
     };
 
     emailjs.send("service_cuab1yr", "template_sidhjme", params)
@@ -37,29 +37,39 @@ function verifyCode(event) {
     event.preventDefault();
 
     let enteredCode = document.getElementById("code").value;
-    let email = document.getElementById("email").value; 
-    console.log(enteredCode, email)
+    let email = document.getElementById("email").value;
+    let firstName = document.getElementById("firstName").value;
+    let lastName = document.getElementById("lastName").value;
+    let now = new Date();
+    let date = now.toLocaleString();
+
     fetch("/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, code: enteredCode }),
-        credentials: 'include' 
+        body: JSON.stringify({
+            email: email,
+            code: enteredCode,
+            firstName: firstName,
+            lastName: lastName,
+            date: date
+        }),
+        credentials: 'include'
     })
-    .then(response => response.json()) 
+    .then(response => response.json())
     .then(data => {
         Swal.fire({
             title: "Verification",
-            html: data.generatedPassword, 
+            html: data.generatedPassword,
             icon: data.message.includes("success") ? "success" : "error",
             confirmButtonText: "OK"
-        }).then((result) => {
+        }).then(() => {
             if (data.message.includes("success")) {
                 setTimeout(() => {
                     window.location.href = "main.html";
                 }, 1000);
             }
         });
-    })   
+    })
     .catch(error => {
         console.error("Error verifying code:", error);
         Swal.fire({
@@ -70,6 +80,7 @@ function verifyCode(event) {
         });
     });
 }
+
 
 
 

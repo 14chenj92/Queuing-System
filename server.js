@@ -5,6 +5,8 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3001;
 const http = require("http");
+const router = express.Router();
+const generateWaiverPDF = require('./generateWaiver');
 
 const wordList = require('./words');
 
@@ -46,7 +48,7 @@ app.get("/", (req, res) => {
 
 // Save the code in the session
 app.post("/save-code", (req, res) => {
-  const { email, code } = req.body;
+  const { email, code, firstName, lastName, date } = req.body;
 
   if (!email || !code) {
     return res.status(400).send("Email and code are required.");
@@ -64,23 +66,18 @@ app.post("/save-code", (req, res) => {
 });
 
 app.post("/verify-code", (req, res) => {
-  const { email, code } = req.body;
+  const { email, code, firstName, lastName, date } = req.body;
   console.log("Verification code in session:", req.session.verificationCode);
   console.log("Email in session:", req.session.email);
 
-  // Ensure session data exists
   if (!req.session.verificationCode || !req.session.email) {
-    return res
-      .status(400)
-      .send("No verification code found. Request a new one.");
+    return res.status(400).send("No verification code found. Request a new one.");
   }
 
-  // Check if email matches the one stored in session
   if (email !== req.session.email) {
     return res.status(400).send("Email does not match.");
   }
 
-  // Check if the entered code matches the stored session code
   if (code == req.session.verificationCode) {
     db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
       if (err) {
@@ -93,25 +90,24 @@ app.post("/verify-code", (req, res) => {
       }
 
       const user = results[0];
-      const password = user.password; // Fetch the password
 
-      // Update registered status
-      db.query(
-        "UPDATE users SET registered = TRUE WHERE email = ?",
-        [email],
-        (err) => {
-          if (err) {
-            console.error("Database update error:", err);
-            return res.status(500).send("Error updating approval status.");
-          }
-
-          req.session.destroy(); // Clear session after verification
-          res.json({
-            message: "Email verified successfully! Account registered.",
-            generatedPassword: `Email verified successfully! Account registered.`,
-          });
+      db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {
+        if (err) {
+          console.error("Database update error:", err);
+          return res.status(500).send("Error updating approval status.");
         }
-      );
+
+
+        const pdfPath = generateWaiverPDF({ firstName, lastName, date, code });
+
+        req.session.destroy(); // Clear session 
+
+        return res.json({
+          message: "Email verified successfully! Account registered.",
+          generatedPassword: "Email verified successfully! Account registered.",
+          pdfPath: pdfPath 
+        });
+      });
     });
   } else {
     req.session.destroy();
