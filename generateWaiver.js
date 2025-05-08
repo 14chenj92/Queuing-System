@@ -1,50 +1,44 @@
-const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const signer = require('node-signpdf').default;
+const { PDFDocument } = require('pdf-lib');
+const plainAddPlaceholder = require('node-signpdf/dist/helpers/plainAddPlaceholder'); // <- NOTE
 
-function generateWaiverPDF({ firstName, lastName, date, code }) {
-    const doc = new PDFDocument();
-    const fileName = `${firstName}_${lastName}_Waiver.pdf`;
-    const filePath = path.join(__dirname, 'waivers', fileName);
+async function generateSignedWaiver({ firstName, lastName, date }) {
+  const desktopPath = path.join(os.homedir(), 'Desktop');
+  const waiverFormsPath = path.join(desktopPath, 'WaiverForms');
+  if (!fs.existsSync(waiverFormsPath)) {
+    fs.mkdirSync(waiverFormsPath, { recursive: true });
+  }
 
-    // Ensure the waivers folder exists
-    if (!fs.existsSync(path.join(__dirname, 'waivers'))) {
-        fs.mkdirSync(path.join(__dirname, 'waivers'));
-    }
+  const outputPath = path.join(waiverFormsPath, `${firstName}_${lastName}_Waiver.pdf`);
+  const unsignedPdfPath = path.join(__dirname, 'waivers', `${firstName}_${lastName}_unsigned.pdf`);
 
-    const stream = fs.createWriteStream(filePath);
-    doc.pipe(stream);
+  // Create basic PDF
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage();
+  const { height } = page.getSize();
+  page.drawText(`Waiver for ${firstName} ${lastName}`, { x: 50, y: height - 100 });
+  page.drawText(`Date: ${date}`, { x: 50, y: height - 120 });
+  fs.writeFileSync(unsignedPdfPath, await pdfDoc.save());
 
-    doc.fontSize(12).text(`GYM WAIVER AND RELEASE AGREEMENT`, { align: 'center' });
-    doc.moveDown();
+  // Add placeholder
+  const pdfBufferWithPlaceholder = plainAddPlaceholder({
+    pdfBuffer: fs.readFileSync(unsignedPdfPath),
+    reason: 'Signed electronically by 21BC',
+    signatureLength: 8192,
+  });
 
-    doc.text(`Facility: 21 Badminton Club (21BC)
-Location: 40760 Encyclopedia Cir, Fremont, CA 94538
+  // Sign the PDF
+  const p12Buffer = fs.readFileSync(path.join(__dirname, 'keys', 'private.p12'));
+  const signedPdf = signer.sign(pdfBufferWithPlaceholder, {
+    p12Buffer,
+    passphrase: 'your-passphrase', // Replace this
+  });
 
-I, the undersigned, wish to use the facilities and participate in activities provided by 21 Badminton Club (21BC). By signing this waiver, I acknowledge and agree to the following terms:
-
-Participant Information:
-• Full Name: ${firstName} ${lastName}
-• Date of Birth: ____________________
-• Address: ________________________________________
-• Phone Number: _____________________________
-• Emergency Contact: ____________________
-
-Assumption of Risk:
-I acknowledge that using 21BC facilities, equipment, and participating in physical exercise involves inherent risks...
-
-Waiver and Release:
-I hereby release, waive, discharge, and agree not to sue 21BC, its employees, or agents...
-
-Acknowledgment:
-I have read this waiver and understand its terms.
-
-Signature: ____________________        Date: ${date}
-Parent/Guardian Signature (if under 18): ____________________        Date: ____________________`);
-
-    doc.end();
-
-    return filePath; 
+  fs.writeFileSync(outputPath, signedPdf);
+  return outputPath;
 }
 
-module.exports = generateWaiverPDF;
+module.exports = generateSignedWaiver;

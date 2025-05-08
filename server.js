@@ -65,55 +65,36 @@ app.post("/save-code", (req, res) => {
   res.send("Verification code saved.");
 });
 
-app.post("/verify-code", (req, res) => {
-  const { email, code, firstName, lastName, date } = req.body;
-  console.log("Verification code in session:", req.session.verificationCode);
-  console.log("Email in session:", req.session.email);
+const generateSignedWaiver = require('./generateWaiver');
 
-  if (!req.session.verificationCode || !req.session.email) {
-    return res.status(400).send("No verification code found. Request a new one.");
-  }
+app.post("/verify-code", async (req, res) => {
+    const { email, code, firstName, lastName, date } = req.body;
 
-  if (email !== req.session.email) {
-    return res.status(400).send("Email does not match.");
-  }
+    if (code == req.session.verificationCode && email === req.session.email) {
+        try {
+            // Save waiver with signature
+            const filePath = await generateSignedWaiver({ firstName, lastName, date, code });
 
-  if (code == req.session.verificationCode) {
-    db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
-      if (err) {
-        console.error("Database query error:", err);
-        return res.status(500).send("Internal Server Error");
-      }
+            // Update DB & respond
+            db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {
+                if (err) return res.status(500).send("Database error");
 
-      if (results.length === 0) {
-        return res.status(404).send("User not found.");
-      }
-
-      const user = results[0];
-
-      db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {
-        if (err) {
-          console.error("Database update error:", err);
-          return res.status(500).send("Error updating approval status.");
+                req.session.destroy();
+                res.json({
+                    message: "Email verified, waiver signed and saved.",
+                    filePath,
+                });
+            });
+        } catch (err) {
+            console.error("Signing error:", err);
+            res.status(500).send("PDF signing failed.");
         }
-
-
-        const pdfPath = generateWaiverPDF({ firstName, lastName, date, code });
-
-        req.session.destroy(); // Clear session 
-
-        return res.json({
-          message: "Email verified successfully! Account registered.",
-          generatedPassword: "Email verified successfully! Account registered.",
-          pdfPath: pdfPath 
-        });
-      });
-    });
-  } else {
-    req.session.destroy();
-    res.status(400).send("Invalid code. Request a new one.");
-  }
+    } else {
+        req.session.destroy();
+        res.status(400).send("Invalid code or email.");
+    }
 });
+
 
 // const db = mysql.createConnection({
 //   host: "localhost",
