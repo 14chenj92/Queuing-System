@@ -95,7 +95,6 @@ app.post("/verify-code", async (req, res) => {
     }
 });
 
-
 // const db = mysql.createConnection({
 //   host: "localhost",
 //   user: process.env.DB_USER,
