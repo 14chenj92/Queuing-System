@@ -565,42 +565,46 @@ function renderCourts() {
 
   const isAdminPage = window.location.pathname.includes("admin.html");
 
+  const courtsData = JSON.parse(localStorage.getItem("courtsData")) || {};
   const courtEntries = Object.entries(courts);
 
   courtEntries.forEach(([court, details], index) => {
     let minutes = Math.floor(details.timeLeft / 60);
     let seconds = details.timeLeft % 60;
 
-    let courtStatusClass =
-      details.currentPlayers.length === 0 ? "open" : "closed";
-    if (court === "Rest Area") {
-      courtStatusClass += " unavailable"; // Mark Las Vegas as unavailable
-    }
+    let isUnavailable = courtsData[court] === "unavailable" || court === "Rest Area";
+    let courtStatusClass = isUnavailable
+      ? "unavailable"
+      : details.currentPlayers.length === 0
+      ? "open"
+      : "closed";
 
     const adminClass = isAdminPage ? "court-card-admin" : "";
-let courtDisplay = `<div class="court-card ${courtStatusClass} ${adminClass}">`;
+    let courtDisplay = `<div class="court-card ${courtStatusClass} ${adminClass}">`;
 
     courtDisplay += `<h3>${court}</h3>`;
 
-    const statusText =
-      court === "Rest Area"
-        ? "Unavailable"
-        : details.currentPlayers.length === 0
-        ? "Open"
-        : "In Progress";
+    const statusText = isUnavailable
+      ? "Unavailable"
+      : details.currentPlayers.length === 0
+      ? "Open"
+      : "In Progress";
+
     courtDisplay += `<p class="status">${statusText}</p>`;
 
-    if (courtStatusClass === "closed") {
+    if (!isUnavailable && courtStatusClass === "closed") {
       courtDisplay += `<p>Time Left: ${minutes}:${seconds
         .toString()
         .padStart(2, "0")}</p>`;
     }
-    if (court !== "Rest Area") {
-    courtDisplay += `<p>Current Players: ${
-      details.currentPlayers.join(", ") || "None"
-    }</p>`;
-  }
-    if (isAdminPage) {
+
+    if (!isUnavailable) {
+      courtDisplay += `<p>Current Players: ${
+        details.currentPlayers.join(", ") || "None"
+      }</p>`;
+    }
+
+    if (isAdminPage && !isUnavailable) {
       details.currentPlayers.forEach((player, index) => {
         courtDisplay += `<p>Player ${
           index + 1
@@ -610,13 +614,14 @@ let courtDisplay = `<div class="court-card ${courtStatusClass} ${adminClass}">`;
       });
     }
 
-    if (court !== "Rest Area") {
+    if (!isUnavailable) {
       for (let i = 0; i < 3; i++) {
         courtDisplay += `<p>Queue ${i + 1}: ${
           details.queue[i] ? details.queue[i].join(", ") : "Empty"
         }</p>`;
       }
     }
+
     courtDisplay += `</div>`;
 
     if (index < 3) {

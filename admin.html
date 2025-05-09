@@ -28,6 +28,8 @@
       </div>
       <div id="userStats"></div>
     </div>
+    <h2>Court Status</h2>
+    <label for="courtSelection">Select Court to Remove Players:</label>
     <select id="courtSelection">
       <option value="Paris">Paris</option>
       <option value="London">London</option>
@@ -39,7 +41,23 @@
       <option value="Toronto">Toronto</option>
       <option value="New York">New York</option>
     </select>
-    <h2>Court Status</h2>
+    <h2>Toggle Court Availability</h2>
+    <div class="court-toggle-container">
+      <label for="courtToggleSelect">Select Court:</label>
+      <select id="courtToggleSelect">
+        <option value="">-- Choose a court --</option>
+        <option value="Paris">Paris</option>
+        <option value="London">London</option>
+        <option value="Berlin">Berlin</option>
+        <option value="Tokyo">Tokyo</option>
+        <option value="New Delhi">New Delhi</option>
+        <option value="Jakarta">Jakarta</option>
+        <option value="Beijing">Beijing</option>
+        <option value="Toronto">Toronto</option>
+        <option value="New York">New York</option>
+      </select>
+      <button id="toggleCourtBtn" disabled>Toggle Availability</button>
+    </div>    
     <div id="courtStatus" class="court-container"></div>
     <script src="function.js"></script>
     <script src="script.js"></script>
@@ -196,6 +214,53 @@
           }
         }
       });
-    </script>    
+    </script> 
+<script>
+  const courtSelect = document.getElementById("courtToggleSelect");
+  const toggleBtn = document.getElementById("toggleCourtBtn");
+
+  function updateToggleButton() {
+    const court = courtSelect.value;
+    if (!court) {
+      toggleBtn.disabled = true;
+      toggleBtn.textContent = "Toggle";
+      return;
+    }
+
+    const courtsData = JSON.parse(localStorage.getItem("courtsData")) || {};
+    const isUnavailable = courtsData[court] === "unavailable";
+    toggleBtn.textContent = isUnavailable ? `Enable ${court}` : `Disable ${court}`;
+    toggleBtn.disabled = false;
+  }
+
+  courtSelect.addEventListener("change", updateToggleButton);
+
+  toggleBtn.addEventListener("click", () => {
+    const court = courtSelect.value;
+    if (!court) return;
+
+    const courtsData = JSON.parse(localStorage.getItem("courtsData")) || {};
+    const isUnavailable = courtsData[court] === "unavailable";
+
+    courtsData[court] = isUnavailable ? "available" : "unavailable";
+
+    localStorage.setItem("courtsData", JSON.stringify(courtsData));
+    localStorage.setItem("courtsDataUpdated", Date.now());
+
+    updateToggleButton();
+    renderCourts();
+  });
+
+  // Initial setup
+  updateToggleButton();
+
+  window.addEventListener("storage", function (event) {
+    if (event.key === "courtsDataUpdated") {
+      renderCourts();
+      updateToggleButton();
+    }
+  });
+</script>
+   
   </body>
 </html>

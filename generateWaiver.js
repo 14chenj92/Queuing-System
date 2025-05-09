@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const signer = require('node-signpdf').default;
-const { PDFDocument, rgb } = require('pdf-lib');
+const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const { plainAddPlaceholder } = require('node-signpdf/dist/helpers');
 
 async function generateSignedWaiver({ firstName, lastName, date }) {
@@ -12,44 +12,55 @@ async function generateSignedWaiver({ firstName, lastName, date }) {
     fs.mkdirSync(waiverFormsPath, { recursive: true });
   }
 
-  const outputPath = path.join(waiverFormsPath, `${firstName}_${lastName}_Waiver.pdf`);
-  const unsignedPdfPath = path.join(__dirname, 'waivers', `${firstName}_${lastName}_unsigned.pdf`);
+  const formattedDate = new Date(date).toISOString().split('T')[0];
+  const timestamp = new Date()
+    .toLocaleString('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+    .replace(/[/:]/g, '-')
+    .replace(', ', '_');
 
-  // STEP 1: Generate and fill PDF
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([600, 400]);
-  const { height } = page.getSize();
+  const outputFilename = `${firstName}_${lastName}_Waiver_${timestamp}.pdf`;
+  const outputPath = path.join(waiverFormsPath, outputFilename);
+  const waiverTemplatePath = path.join(__dirname, '21BC_Waiver_CleanFillable.pdf');
 
-  page.drawText(`Waiver for ${firstName} ${lastName}`, {
-    x: 50,
-    y: height - 100,
-    size: 16,
+  const existingPdfBytes = fs.readFileSync(waiverTemplatePath);
+  const pdfDoc = await PDFDocument.load(existingPdfBytes);
+  const pages = pdfDoc.getPages();
+  const firstPage = pages[0];
+  const { height } = firstPage.getSize();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  firstPage.drawText(`${firstName} ${lastName}`, {
+    x: 170,
+    y: height - 240,
+    size: 12,
+    font,
     color: rgb(0, 0, 0),
   });
 
-  page.drawText(`Date: ${date}`, {
-    x: 50,
-    y: height - 130,
+  firstPage.drawText(`${formattedDate}`, {
+    x: 400,
+    y: 112,
     size: 12,
-  });
-
-  page.drawText('Signature:', {
-    x: 50,
-    y: 100,
-    size: 12,
+    font,
+    color: rgb(0, 0, 0),
   });
 
   const pdfBytes = await pdfDoc.save({ useObjectStreams: false });
-  fs.writeFileSync(unsignedPdfPath, pdfBytes);
 
-  // STEP 2: Add signature placeholder
   const pdfBufferWithPlaceholder = plainAddPlaceholder({
-    pdfBuffer: fs.readFileSync(unsignedPdfPath),
+    pdfBuffer: Buffer.from(pdfBytes),
     reason: 'Signed electronically by 21BC',
     signatureLength: 8192,
   });
 
-  // STEP 3: Sign the PDF
   try {
     const p12Path = path.join(__dirname, 'fixed-private.p12');
     const p12Buffer = fs.readFileSync(p12Path);
