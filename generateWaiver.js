@@ -38,8 +38,8 @@ async function generateSignedWaiver({ firstName, lastName, date }) {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   firstPage.drawText(`${firstName} ${lastName}`, {
-    x: 170,
-    y: height - 240,
+    x: 140,
+    y: height - 230,
     size: 12,
     font,
     color: rgb(0, 0, 0),
@@ -48,6 +48,22 @@ async function generateSignedWaiver({ firstName, lastName, date }) {
   firstPage.drawText(`${formattedDate}`, {
     x: 400,
     y: 112,
+    size: 12,
+    font,
+    color: rgb(0, 0, 0),
+  });
+
+  firstPage.drawText(`${firstName} ${lastName}`, {
+    x: 133,
+    y: 138,
+    size: 12,
+    font,
+    color: rgb(0, 0, 0),
+  });
+
+  firstPage.drawText(`${formattedDate}`, {
+    x: 270,
+    y: 138,
     size: 12,
     font,
     color: rgb(0, 0, 0),

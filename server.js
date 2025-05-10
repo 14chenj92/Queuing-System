@@ -73,7 +73,7 @@ app.post("/verify-code", async (req, res) => {
     if (code == req.session.verificationCode && email === req.session.email) {
         try {
             // Save waiver with signature
-            const filePath = await generateSignedWaiver({ firstName, lastName, date, code });
+            const filePath = await generateSignedWaiver({ firstName, lastName, date});
 
             // Update DB & respond
             db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {
@@ -81,8 +81,9 @@ app.post("/verify-code", async (req, res) => {
 
                 req.session.destroy();
                 res.json({
-                    message: "Email verified, waiver signed and saved.",
+                    message: "Email verified successfully! Account registered.",
                     filePath,
+                    generatedPassword: `Email verified successfully! Account registered.`
                 });
             });
         } catch (err) {
