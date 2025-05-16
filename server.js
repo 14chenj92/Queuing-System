@@ -73,7 +73,7 @@ app.post("/verify-code", async (req, res) => {
     if (code == req.session.verificationCode && email === req.session.email) {
         try {
             // Save waiver with signature
-            const filePath = await generateSignedWaiver({ firstName, lastName, date});
+            const filePath = await generateSignedWaiver({ firstName, lastName, email, date});
 
             // Update DB & respond
             db.query("UPDATE users SET registered = TRUE WHERE email = ?", [email], (err) => {

@@ -1,11 +1,30 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 const signer = require('node-signpdf').default;
-const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+const { PDFDocument, rgb, StandardFonts, PDFName } = require('pdf-lib');
 const { plainAddPlaceholder } = require('node-signpdf/dist/helpers');
 
-async function generateSignedWaiver({ firstName, lastName, date }) {
+function generateP12({ firstName, lastName, email }) {
+  const name = `${firstName} ${lastName}`;
+  const subj = `/CN=${name}/emailAddress=${email}`;
+  const keyPath = path.join(__dirname, 'temp.key');
+  const crtPath = path.join(__dirname, 'temp.crt');
+  const p12Path = path.join(__dirname, 'temp.p12');
+
+  execSync(`openssl req -newkey rsa:2048 -nodes -keyout "${keyPath}" -x509 -days 365 -out "${crtPath}" -subj "${subj}"`, { stdio: 'ignore' });
+  execSync(`openssl pkcs12 -export -out "${p12Path}" -inkey "${keyPath}" -in "${crtPath}" -passout pass:root`, { stdio: 'ignore' });
+
+  const p12Buffer = fs.readFileSync(p12Path);
+  fs.unlinkSync(keyPath);
+  fs.unlinkSync(crtPath);
+  fs.unlinkSync(p12Path);
+
+  return p12Buffer;
+}
+
+async function generateSignedWaiver({ firstName, lastName, email, date }) {
   const desktopPath = path.join(os.homedir(), 'Desktop');
   const waiverFormsPath = path.join(desktopPath, 'WaiverForms');
   if (!fs.existsSync(waiverFormsPath)) {
@@ -32,6 +51,19 @@ async function generateSignedWaiver({ firstName, lastName, date }) {
 
   const existingPdfBytes = fs.readFileSync(waiverTemplatePath);
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+  const acroForm = pdfDoc.catalog.lookup(PDFName.of('AcroForm'));
+  if (acroForm) {
+    pdfDoc.catalog.set(PDFName.of('AcroForm'), undefined);
+  }
+
+  for (const page of pdfDoc.getPages()) {
+    const annotations = page.node.Annots();
+    if (annotations) {
+      page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([]));
+    }
+  }
+
   const pages = pdfDoc.getPages();
   const firstPage = pages[0];
   const { height } = firstPage.getSize();
@@ -53,14 +85,6 @@ async function generateSignedWaiver({ firstName, lastName, date }) {
     color: rgb(0, 0, 0),
   });
 
-  firstPage.drawText(`${firstName} ${lastName}`, {
-    x: 133,
-    y: 138,
-    size: 12,
-    font,
-    color: rgb(0, 0, 0),
-  });
-
   firstPage.drawText(`${formattedDate}`, {
     x: 270,
     y: 138,
@@ -75,11 +99,13 @@ async function generateSignedWaiver({ firstName, lastName, date }) {
     pdfBuffer: Buffer.from(pdfBytes),
     reason: 'Signed electronically by 21BC',
     signatureLength: 8192,
+    signatureFieldName: 'Signature1',
+    rect: [133, 132, 300, 150],
+    page: 0,
   });
 
   try {
-    const p12Path = path.join(__dirname, 'fixed-private.p12');
-    const p12Buffer = fs.readFileSync(p12Path);
+    const p12Buffer = generateP12({ firstName, lastName, email });
 
     const signedPdf = signer.sign(pdfBufferWithPlaceholder, p12Buffer, {
       passphrase: 'root',
