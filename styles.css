@@ -68,7 +68,7 @@ input[type="text"], input[type="password"], input[type="email"], select {
 #emailForm input,
 #verifyForm input,
 .login-box input {
-    width:250px;
+    width:275px;
 }
 
 
