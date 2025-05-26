@@ -13,7 +13,7 @@ function generateP12({ firstName, lastName, email }) {
   const crtPath = path.join(__dirname, 'temp.crt');
   const p12Path = path.join(__dirname, 'temp.p12');
 
-  execSync(`openssl req -newkey rsa:2048 -nodes -keyout "${keyPath}" -x509 -days 365 -out "${crtPath}" -subj "${subj}"`, { stdio: 'ignore' });
+  execSync(`openssl req -newkey rsa:2048 -nodes -keyout "${keyPath}" -x509 -days 7300 -out "${crtPath}" -subj "${subj}"`, { stdio: 'ignore' });
   execSync(`openssl pkcs12 -export -out "${p12Path}" -inkey "${keyPath}" -in "${crtPath}" -passout pass:root`, { stdio: 'ignore' });
 
   const p12Buffer = fs.readFileSync(p12Path);
@@ -91,6 +91,14 @@ async function generateSignedWaiver({ firstName, lastName, email, date }) {
     size: 12,
     font,
     color: rgb(0, 0, 0),
+  });
+
+  firstPage.drawText('Digitally signed', {
+  x: 135, 
+  y: 138, 
+  size: 10,
+  font,
+  color: rgb(0.2, 0.2, 0.2),
   });
 
   const pdfBytes = await pdfDoc.save({ useObjectStreams: false });

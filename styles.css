@@ -56,6 +56,22 @@ input[type="text"], input[type="password"], input[type="email"], select {
     font-family: var(--main-font)
 }
 
+#emailForm input,
+#verifyForm input,
+#emailForm label,
+#verifyForm label, 
+.login-box input, 
+.login-box label  {
+    font-size: 22px !important;
+}
+
+#emailForm input,
+#verifyForm input,
+.login-box input {
+    width:250px;
+}
+
+
 form {
     display: flex;  
     flex-direction: column;

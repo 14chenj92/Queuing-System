@@ -9,6 +9,11 @@
     --third-font: "Kalam";
   }
 
+  html, body {
+    overflow: hidden;
+    height: 100%;
+}
+
 body {
     background-color: var(--secondary-color);
     color: var(--main-color);
