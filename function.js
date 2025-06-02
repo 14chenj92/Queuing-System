@@ -51,141 +51,146 @@ function generatePassword() {
 
 function showUsers() {
   fetch("/users")
-  .then((response) => response.json())
-  .then((data) => {
-  users = {}; 
-  let userDropdown = `<h3>Manage Users</h3><select id="userSelect" onchange="displayUserDetails()">`;
-  userDropdown += `<option value="">-- Select a User --</option>`;
-  
-  data.forEach((user) => {
-    users[user.username] = user; 
-  
-    userDropdown += `<option value="${user.username}">${user.username}</option>`;
+    .then((response) => response.json())
+    .then((data) => {
+      users = {};
+      data.forEach((user) => {
+        users[user.email.toLowerCase()] = user;
+      });
+    })
+    .catch((err) => console.error("Error fetching users:", err));
+}
+
+function filterUsersByEmail() {
+  const search = document.getElementById("emailSearch").value.toLowerCase();
+  const suggestionBox = document.getElementById("emailSuggestions");
+  suggestionBox.innerHTML = "";
+
+  let matches = [];
+
+  if (!search) {
+    matches = Object.values(users).sort((a, b) =>
+      a.email.localeCompare(b.email)
+    );
+  } else {
+    matches = Object.values(users).filter(user =>
+      user.email.toLowerCase().includes(search)
+    );
+  }
+
+  matches.forEach(user => {
+    const item = document.createElement("li");
+    item.textContent = user.email;
+    item.onclick = () => {
+      displayUserDetails(user.email);
+      suggestionBox.innerHTML = "";
+      document.getElementById("emailSearch").value = user.email;
+    };
+    suggestionBox.appendChild(item);
   });
-  
-  userDropdown += `</select>`;
-  document.getElementById("userList").innerHTML = userDropdown;
-  document.getElementById("userDetails").innerHTML = ""; 
-  })
-  .catch((err) => console.error("Error fetching users:", err));
-  }
-
-function displayUserDetails() {
-  let selectedUser = document.getElementById("userSelect").value;
-  if (selectedUser) {
-    let user = users[selectedUser];
-
-    let formattedSignInDate = new Date(user.signInDate).toLocaleString(
-      "en-US",
-      {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }
-    );
-
-    let userDetails = `
-      <h3>User Details (Will be replaced after test)</h3>
-      <strong>Username:</strong> ${user.username} <br>
-      <strong>Password:</strong> ${user.password} <br>
-      <strong>First Name:</strong> ${user.firstName} <br>
-      <strong>Last Name:</strong> ${user.lastName} <br>
-      <strong>Email:</strong> ${user.email} <br>
-      <strong>Registered:</strong> ${user.registered} <br>
-      <strong>Membership Type:</strong> ${user.membership} <br>
-      <strong>Sign In Date:</strong> ${formattedSignInDate} <br>
-      <strong>isSignedIn:</strong> ${user.isSignedIn} <br>
-      <button onclick="editUser('${user.username}')">Edit</button>
-      <button onclick="deleteUser('${user.username}')">Delete</button>
-      `;
-
-    let today = new Date();
-
-    // Get users signed in today
-    let signedInTodayUsers = Object.values(users).filter((user) => {
-      let signInDate = new Date(user.signInDate);
-      return (
-        signInDate.getFullYear() === today.getFullYear() &&
-        signInDate.getMonth() === today.getMonth() &&
-        signInDate.getDate() === today.getDate()
-      );
-    });
-
-    let totalSignedInToday = signedInTodayUsers.length;
-
-    let signedInWithMembership = signedInTodayUsers.filter(
-      (user) => user.membership > 0
-    ).length;
-
-    let signedInWithoutMembership = totalSignedInToday - signedInWithMembership;
-
-    let statsHtml = `
-      <h3>User Statistics</h3>
-      <strong>Users Signed In Today:</strong> ${totalSignedInToday} <br>
-      <strong>With Membership:</strong> ${signedInWithMembership} <br>
-      <strong>Drop In:</strong> ${signedInWithoutMembership} <br>
-      `;
-
-    let signedInDropdown = `<label for="signedInSelect"><h3>Users Signed In Today</h3></label>
-      <select id="signedInSelect" onchange="displaySignedInUserDetails()">
-          <option value="">Select a User</option>`;
-
-    signedInTodayUsers.forEach((user) => {
-      signedInDropdown += `<option value="${user.username}">${user.username}</option>`;
-    });
-
-    signedInDropdown += `</select>`;
-
-    document.getElementById("userStats").innerHTML = statsHtml;
-    document.getElementById("userDetails").innerHTML = userDetails;
-    document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
-  } else {
-    document.getElementById("userDetails").innerHTML = "";
-    document.getElementById("signedInDropdown").innerHTML = "";
-  }
 }
 
-function displaySignedInUserDetails() {
-  let selectedSignedInUser = document.getElementById("signedInSelect").value;
-  if (selectedSignedInUser) {
-    let user = users[selectedSignedInUser];
+document.addEventListener("DOMContentLoaded", () => {
+  const emailInput = document.getElementById("emailSearch");
+  emailInput.addEventListener("focus", filterUsersByEmail);
+});
 
-    let formattedSignInDate = new Date(user.signInDate).toLocaleString(
-      "en-US",
-      {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }
+
+
+function displayUserDetails(email) {
+  const user = users[email];
+  if (!user) return;
+
+  const formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const userDetails = `
+    <h3>User Details</h3>
+    <strong>Username:</strong> ${user.username}<br>
+    <strong>Password:</strong> ${user.password}<br>
+    <strong>First Name:</strong> ${user.firstName}<br>
+    <strong>Last Name:</strong> ${user.lastName}<br>
+    <strong>Email:</strong> ${user.email}<br>
+    <strong>Registered:</strong> ${user.registered}<br>
+    <strong>Membership Type:</strong> ${user.membership}<br>
+    <strong>Sign In Date:</strong> ${formattedSignInDate}<br>
+    <strong>isSignedIn:</strong> ${user.isSignedIn}<br>
+    <button onclick="editUser('${user.username}')">Edit</button>
+    <button onclick="deleteUser('${user.username}')">Delete</button>
+  `;
+
+  const today = new Date();
+
+  const signedInTodayUsers = Object.values(users).filter((u) => {
+    const signInDate = new Date(u.signInDate);
+    return (
+      signInDate.getFullYear() === today.getFullYear() &&
+      signInDate.getMonth() === today.getMonth() &&
+      signInDate.getDate() === today.getDate()
     );
+  });
 
-    let signedInUserDetails = `
-      <h3>Signed In User Details</h3>
-      <strong>Username:</strong> ${user.username} <br>
-      <strong>Password:</strong> ${user.password} <br>
-      <strong>First Name:</strong> ${user.firstName} <br>
-      <strong>Last Name:</strong> ${user.lastName} <br>
-      <strong>Email:</strong> ${user.email} <br>
-      <strong>Registered:</strong> ${user.registered} <br>
-      <strong>Membership Type:</strong> ${user.membership} <br>
-      <strong>Sign In Date:</strong> ${formattedSignInDate} <br>
-      <strong>isSignedIn:</strong> ${user.isSignedIn} <br>
-      <button onclick="editUser('${user.username}')">Edit</button>
-      <button onclick="deleteUser('${user.username}')">Delete</button>
-      `;
+  const totalSignedInToday = signedInTodayUsers.length;
+  const signedInWithMembership = signedInTodayUsers.filter(u => u.membership > 0).length;
+  const signedInWithoutMembership = totalSignedInToday - signedInWithMembership;
 
-    document.getElementById("signedInUserDetails").innerHTML =
-      signedInUserDetails;
-  } else {
-    document.getElementById("signedInUserDetails").innerHTML = "";
-  }
+  const statsHtml = `
+    <h3>User Statistics</h3>
+    <strong>Users Signed In Today:</strong> ${totalSignedInToday} <br>
+    <strong>With Membership:</strong> ${signedInWithMembership} <br>
+    <strong>Drop In:</strong> ${signedInWithoutMembership} <br>
+  `;
+
+  let signedInDropdown = `
+    <label for="signedInSelect"><h3>Users Signed In Today</h3></label>
+    <select id="signedInSelect" onchange="displaySignedInUserDetailsByEmail()">
+      <option value="">Select a User</option>`;
+
+  signedInTodayUsers.forEach((u) => {
+    signedInDropdown += `<option value="${u.email.toLowerCase()}">${u.email}</option>`;
+  });
+
+  signedInDropdown += `</select>`;
+
+  document.getElementById("userDetails").innerHTML = userDetails;
+  document.getElementById("userStats").innerHTML = statsHtml;
+  document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
 }
+
+
+function displaySignedInUserDetailsByEmail() {
+  const selectedEmail = document.getElementById("signedInSelect").value;
+  if (!selectedEmail) return;
+
+  const user = users[selectedEmail];
+  if (!user) return;
+
+  const formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US");
+
+  const userDetails = `
+    <h3>Signed In User Details</h3>
+    <strong>Username:</strong> ${user.username}<br>
+    <strong>Password:</strong> ${user.password}<br>
+    <strong>First Name:</strong> ${user.firstName}<br>
+    <strong>Last Name:</strong> ${user.lastName}<br>
+    <strong>Email:</strong> ${user.email}<br>
+    <strong>Registered:</strong> ${user.registered}<br>
+    <strong>Membership Type:</strong> ${user.membership}<br>
+    <strong>Sign In Date:</strong> ${formattedSignInDate}<br>
+    <strong>isSignedIn:</strong> ${user.isSignedIn}<br>
+    <button onclick="editUser('${user.username}')">Edit</button>
+    <button onclick="deleteUser('${user.username}')">Delete</button>
+  `;
+
+  document.getElementById("signedInUserDetails").innerHTML = userDetails;
+}
+
 
 function editUser(username) {
   let newPassword = prompt(
@@ -254,6 +259,7 @@ function editUser(username) {
       } else {
         alert(`User ${username} updated successfully!`);
         showUsers();
+        location.reload();
       }
     })
     .catch((err) => console.error("Error updating user:", err));
@@ -268,6 +274,7 @@ function deleteUser(username) {
       .then(() => {
         alert(`${username} deleted`);
         showUsers();
+        location.reload();
       })
       .catch((err) => console.error("Error deleting user:", err));
   }

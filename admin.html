@@ -19,6 +19,11 @@
 </select>
 <button id="confirmResetBtn" style="display: none;">Reset Sign In</button>
 </div>
+                <h3>Manage Users</h3>
+              <div class="userSearch">
+<input type="text" id="emailSearch" placeholder="Search by email..." oninput="filterUsersByEmail()" autocomplete="off" />
+<ul id="emailSuggestions" class="suggestions"></ul>
+</div>
     <div id="userList"></div>
     <div class="userInfo">
       <div class="userLeft">

@@ -34,7 +34,10 @@ nav {
     height: 100vh; 
   }
   
-
+.userSearch {
+    display: flex;
+    justify-content: center;
+}
 /* Header */
 h2 {
     color: #222; 
@@ -43,7 +46,34 @@ h2 {
     font-family: var(--main-font);
     font-size: 44px;
 }
+/* Search Bar and Dropdown*/
+    .suggestions {
+    list-style: none;
+    border: 1px solid #ccc;
+    max-height: 150px;
+    overflow-y: auto;
+    position: absolute;
+    background: white;
+    margin: 0;
+    padding: 0;
+    width: 300px;
+    z-index: 10;
+    margin-top: 50px;
+  }
 
+  .suggestions li {
+    padding: 8px;
+    cursor: pointer;
+  }
+
+  .suggestions li:hover {
+    background-color: #f0f0f0;
+  }
+
+.userSearch input[type="text"] {
+width: 300px;
+font-size: 23px;
+  }
 
 /* Form Input */
 input[type="text"], input[type="password"], input[type="email"], select {
