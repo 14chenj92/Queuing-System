@@ -454,6 +454,31 @@ let courts = {
   "Rest Area": { timeLeft: 1800, currentPlayers: [], queue: [] },
 };
 
+let courtsData = {
+  Paris: "available",
+  London: "available",
+  Berlin: "available",
+  Tokyo: "available",
+  "New Delhi": "available",
+  Jakarta: "available",
+  Beijing: "available",
+  Toronto: "available",
+  "New York": "available",
+};
+
+app.get("/api/court-status", (req, res) => {
+  res.json(courtsData);
+});
+
+app.post("/api/court-status", (req, res) => {
+  const { court, status } = req.body;
+  if (!court || !status || !courtsData.hasOwnProperty(court)) {
+    return res.status(400).json({ error: "Invalid court or status" });
+  }
+  courtsData[court] = status;
+  res.json({ court, status });
+});
+
 let version = 0;
 
 function startCourtTimers() {

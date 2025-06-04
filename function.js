@@ -568,18 +568,15 @@ function renderCourts() {
   let firstRow = "";
   let middleRow = "";
   let lastRow = "";
-  let courtCount = 1;
 
   const isAdminPage = window.location.pathname.includes("admin.html");
-
-  const courtsData = JSON.parse(localStorage.getItem("courtsData")) || {};
   const courtEntries = Object.entries(courts);
 
   courtEntries.forEach(([court, details], index) => {
+    let isUnavailable = (typeof courtsData !== "undefined" && courtsData[court] === "unavailable") || court === "Rest Area";
     let minutes = Math.floor(details.timeLeft / 60);
     let seconds = details.timeLeft % 60;
 
-    let isUnavailable = courtsData[court] === "unavailable" || court === "Rest Area";
     let courtStatusClass = isUnavailable
       ? "unavailable"
       : details.currentPlayers.length === 0
@@ -587,8 +584,8 @@ function renderCourts() {
       : "closed";
 
     const adminClass = isAdminPage ? "court-card-admin" : "";
-    let courtDisplay = `<div class="court-card ${courtStatusClass} ${adminClass}">`;
 
+    let courtDisplay = `<div class="court-card ${courtStatusClass} ${adminClass}">`;
     courtDisplay += `<h3>${court}</h3>`;
 
     const statusText = isUnavailable
@@ -600,31 +597,25 @@ function renderCourts() {
     courtDisplay += `<p class="status">${statusText}</p>`;
 
     if (!isUnavailable && courtStatusClass === "closed") {
-      courtDisplay += `<p>Time Left: ${minutes}:${seconds
-        .toString()
-        .padStart(2, "0")}</p>`;
+      courtDisplay += `<p>Time Left: ${minutes}:${seconds.toString().padStart(2, "0")}</p>`;
     }
 
     if (!isUnavailable) {
       courtDisplay += `<p>Current Players: ${
-        details.currentPlayers.join(", ") || "None"
+        details.currentPlayers.length ? details.currentPlayers.join(", ") : "None"
       }</p>`;
     }
 
     if (isAdminPage && !isUnavailable) {
-      details.currentPlayers.forEach((player, index) => {
-        courtDisplay += `<p>Player ${
-          index + 1
-        }: ${player} <button class="remove-btn" onclick="removePlayer(${
-          index + 1
-        })">Remove</button></p>`;
+      details.currentPlayers.forEach((player, i) => {
+        courtDisplay += `<p>Player ${i + 1}: ${player} <button class="remove-btn" onclick="removePlayer('${court}', ${i})">Remove</button></p>`;
       });
     }
 
     if (!isUnavailable) {
       for (let i = 0; i < 3; i++) {
         courtDisplay += `<p>Queue ${i + 1}: ${
-          details.queue[i] ? details.queue[i].join(", ") : "Empty"
+          details.queue[i] && details.queue[i].length ? details.queue[i].join(", ") : "Empty"
         }</p>`;
       }
     }
@@ -645,22 +636,29 @@ function renderCourts() {
       <div class="row middle-row">${middleRow}</div>
       <div class="row last-row">${lastRow}</div>
   `;
+
 }
 
-function removePlayer(playerIndex) {
-  const court = document.getElementById("courtSelection").value;
+
+function removePlayer(court, playerIndex) {
   const courtData = courts[court];
-  const playerName = courtData.currentPlayers[playerIndex - 1];
+  const playerName = courtData.currentPlayers[playerIndex];
 
   if (playerName) {
-    courtData.currentPlayers.splice(playerIndex - 1, 1);
+    courtData.currentPlayers.splice(playerIndex, 1);
 
     if (courtData.queue && courtData.queue.length > 0) {
       const nextPlayer = courtData.queue.shift();
-      courts[court].timeLeft = 1800; 
-      courtData.currentPlayers.push(...nextPlayer);  // Add each player to court
 
-      resetCourtTimer(court); 
+      courts[court].timeLeft = 1800;
+
+      if (Array.isArray(nextPlayer)) {
+        courtData.currentPlayers.push(...nextPlayer);
+      } else if (nextPlayer) {
+        courtData.currentPlayers.push(nextPlayer);
+      }
+
+      resetCourtTimer(court);
     }
 
     Swal.fire({
@@ -668,9 +666,8 @@ function removePlayer(playerIndex) {
       title: `${playerName} has been removed from ${court}`,
     });
 
-    // Save updates to localStorage
     localStorage.setItem("courtsData", JSON.stringify(courts));
-    renderCourts(); 
+    renderCourts();
     saveCourtData();
   } else {
     Swal.fire({

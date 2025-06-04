@@ -221,51 +221,69 @@
       });
     </script> 
 <script>
-  const courtSelect = document.getElementById("courtToggleSelect");
-  const toggleBtn = document.getElementById("toggleCourtBtn");
+const courtSelect = document.getElementById("courtToggleSelect");
+const toggleBtn = document.getElementById("toggleCourtBtn");
 
-  function updateToggleButton() {
-    const court = courtSelect.value;
-    if (!court) {
-      toggleBtn.disabled = true;
-      toggleBtn.textContent = "Toggle";
-      return;
-    }
+let courtsData = {};
 
-    const courtsData = JSON.parse(localStorage.getItem("courtsData")) || {};
-    const isUnavailable = courtsData[court] === "unavailable";
-    toggleBtn.textContent = isUnavailable ? `Enable ${court}` : `Disable ${court}`;
-    toggleBtn.disabled = false;
-  }
-
-  courtSelect.addEventListener("change", updateToggleButton);
-
-  toggleBtn.addEventListener("click", () => {
-    const court = courtSelect.value;
-    if (!court) return;
-
-    const courtsData = JSON.parse(localStorage.getItem("courtsData")) || {};
-    const isUnavailable = courtsData[court] === "unavailable";
-
-    courtsData[court] = isUnavailable ? "available" : "unavailable";
-
-    localStorage.setItem("courtsData", JSON.stringify(courtsData));
-    localStorage.setItem("courtsDataUpdated", Date.now());
-
-    updateToggleButton();
-    renderCourts();
-  });
-
-  // Initial setup
+async function fetchCourts() {
+  const res = await fetch("/api/court-status"); 
+  courtsData = await res.json();
   updateToggleButton();
+  renderCourts();
+}
 
-  window.addEventListener("storage", function (event) {
-    if (event.key === "courtsDataUpdated") {
-      renderCourts();
+function updateToggleButton() {
+  const court = courtSelect.value;
+  if (!court) {
+    toggleBtn.disabled = true;
+    toggleBtn.textContent = "Toggle";
+    return;
+  }
+  const isUnavailable = courtsData[court] === "unavailable";
+  toggleBtn.textContent = isUnavailable ? `Enable ${court}` : `Disable ${court}`;
+  toggleBtn.disabled = false;
+}
+
+courtSelect.addEventListener("change", updateToggleButton);
+
+toggleBtn.addEventListener("click", () => {
+  const court = courtSelect.value;
+  if (!court) return;
+
+  const newStatus = courtsData[court] === "unavailable" ? "available" : "unavailable";
+
+  fetch("/api/court-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ court, status: newStatus }),
+  })
+    .then(res => res.json())
+    .then(updated => {
+      courtsData[court] = newStatus;
       updateToggleButton();
-    }
+      renderCourts();
+    })
+    .catch(err => console.error("Failed to update court status:", err));
+});
+
+function toggleCourt(courtName) {
+  fetch("/api/courts/toggle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ court: courtName }),
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log("Court toggled:", data);
+    // Update UI based on new status
+  })
+  .catch(err => {
+    console.error("Failed to update court status:", err);
   });
+}
+
+fetchCourts();
 </script>
-   
   </body>
 </html>
