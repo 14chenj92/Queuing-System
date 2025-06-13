@@ -11,6 +11,8 @@ function sendMail(event) {
     let now = new Date();
     let currentDate = now.toLocaleString();
 
+    console.log("Verification Code:", verificationCode); 
+
     let params = {
         email: email,
         code: verificationCode,
@@ -18,20 +20,18 @@ function sendMail(event) {
         lastName: lastName,
         date: currentDate
     };
+    // Temp Fix
+    fetch("/save-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, code: verificationCode })
+    });
 
     emailjs.send("service_cuab1yr", "template_sidhjme", params)
-        .then(() => {
-            fetch("/save-code", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email, code: verificationCode })
-            });
-        })
         .catch((error) => {
-            console.error("Error sending email:", error);
+            console.warn("Email service failed (OK for dev):", error);
         });
 }
-
 
 function verifyCode(event) {
     event.preventDefault();
