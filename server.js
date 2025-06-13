@@ -173,7 +173,8 @@ function generateRandomPassword(callback) {
 
 // Routes
 app.post("/register", (req, res) => {
-  const { username, password, firstName, lastName } = req.body;
+  let { username, password, firstName, lastName } = req.body;
+  username = username.toLowerCase();
   const email = username;
 
   const checkUserQuery = "SELECT * FROM users WHERE email = ?";
@@ -370,7 +371,7 @@ app.post("/users/validate", (req, res) => {
     const user = results[0];
 
     if (user.password !== password) {
-      return res.status(401).json({ error: "Incorrect password" });
+      return res.status(401).json({ error: `Incorrect password for ${username}` });
     }
 
     if (user.registered !== 1) {
