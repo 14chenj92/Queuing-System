@@ -106,24 +106,29 @@ app.post("/verify-code", async (req, res) => {
 let db;
 
 if (process.env.JAWSDB_URL) {
-  db = mysql.createConnection(process.env.JAWSDB_URL);
+  db = mysql.createPool(process.env.JAWSDB_URL);
 } else {
-  db = mysql.createConnection({
+  db = mysql.createPool({
     host: 'localhost',
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: 3306
+    port: 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
   });
 }
 
 // Connecting to the database
-db.connect((err) => {
+db.query('SELECT 1', (err, results) => {
   if (err) {
-    console.error("Error connecting to the database:", err.stack);
+    console.error("Error testing database connection:", err.stack);
     return;
   }
-  console.log("Connected to the database with ID:", db.threadId);
+  console.log("Database connection pool is working.");
 });
 
 // User Table
