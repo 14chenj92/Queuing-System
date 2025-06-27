@@ -132,33 +132,39 @@ function displayUserDetails(email) {
   });
 
   const userDetails = `
-    <h3>User Details</h3>
-    <strong>Username:</strong> ${user.username}<br>
-    <strong>Password:</strong> ${user.password}<br>
-    <strong>First Name:</strong> ${user.firstName}<br>
-    <strong>Last Name:</strong> ${user.lastName}<br>
-    <strong>Email:</strong> ${user.email}<br>
-    <strong>Registered:</strong> ${user.registered}<br>
-    <strong>Membership Type:</strong> ${user.membership}<br>
-    <strong>Sign In Date:</strong> ${formattedSignInDate}<br>
-    <strong>isSignedIn:</strong> ${user.isSignedIn}<br>
-    <button onclick="editUser('${user.username}')">Edit</button>
-    <button onclick="deleteUser('${user.username}')">Delete</button>
-    <div id="profilePicSection" style="margin-top:20px;">
-      <h4>Upload Profile Picture</h4>
-      <input type="file" id="profilePicInput" accept="image/*" />
-      <button id="uploadPicBtn">Upload</button>
-      <br>
-      <img id="currentProfilePic" src="" alt="Profile Picture" style="max-width: 150px; display:none;" />
-      <br>
-      <button id="deletePicBtn">Delete Profile Picture</button>
+    <div id="userTextInfo">
+      <h3>User Details</h3>
+      <strong>Username:</strong> ${user.username}<br>
+      <strong>Password:</strong> ${user.password}<br>
+      <strong>First Name:</strong> ${user.firstName}<br>
+      <strong>Last Name:</strong> ${user.lastName}<br>
+      <strong>Email:</strong> ${user.email}<br>
+      <strong>Registered:</strong> ${user.registered}<br>
+      <strong>Membership Type:</strong> ${user.membership}<br>
+      <strong>Sign In Date:</strong> ${formattedSignInDate}<br>
+      <strong>isSignedIn:</strong> ${user.isSignedIn}<br>
+      <div id="userButtons">
+      <button onclick="editUser('${user.username}')">Edit</button>
+      <button onclick="deleteUser('${user.username}')">Delete</button>
+      </div>
+      <div id="profilePicSection" style="margin-top: 50px;">
+        <h3>Upload Profile Picture</h3>
+          <div class="centerInputWrapper">
+    <input type="file" id="profilePicInput" accept="image/*" />
+  </div>
+        <div id="profilePicButtons">
+          <button id="uploadPicBtn">Upload</button>
+          <button id="deletePicBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="profilePicOnly">
+      <img id="currentProfilePic" src="" alt="Profile Picture" style="display:none;" />
     </div>
   `;
 
   document.getElementById("userDetails").innerHTML = userDetails;
-
-  const profilePicSection = document.getElementById("profilePicSection");
-  profilePicSection.style.display = "block";
 
   const currentPic = document.getElementById("currentProfilePic");
 
@@ -167,7 +173,7 @@ function displayUserDetails(email) {
     .then(({ exists }) => {
       currentPic.src = exists
         ? `/uploads/${email}.jpg?${Date.now()}`
-        : "/default-profile-pic.jpg";
+        : "/uploads/blankpfp.png";
       currentPic.style.display = "block";
     })
     .catch(() => {
@@ -180,7 +186,7 @@ function displayUserDetails(email) {
     const file = fileInput.files[0];
 
     if (!file) {
-      alert("No file selected.");
+      Swal.fire("No File", "Please select a file to upload.", "warning");
       return;
     }
 
@@ -197,19 +203,28 @@ function displayUserDetails(email) {
       const result = await res.json();
 
       if (result.success) {
-        alert("Profile picture uploaded!");
+        await Swal.fire("Success", "Profile picture uploaded!", "success");
         document.getElementById("currentProfilePic").src = `/uploads/${email}.jpg?${Date.now()}`;
+        location.reload();
       } else {
-        alert("Upload failed.");
+        Swal.fire("Upload Failed", result.message || "Upload failed.", "error");
       }
     } catch (err) {
       console.error("Error:", err);
-      alert("Something went wrong.");
+      Swal.fire("Error", "Something went wrong during upload.", "error");
     }
   });
 
   document.getElementById("deletePicBtn").addEventListener("click", async () => {
-    if (!confirm("Are you sure you want to delete the profile picture?")) return;
+    const confirmation = await Swal.fire({
+      title: "Are you sure?",
+      text: "This will permanently delete the profile picture.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!confirmation.isConfirmed) return;
 
     try {
       const res = await fetch("/api/delete-profile-pic", {
@@ -223,21 +238,20 @@ function displayUserDetails(email) {
       const result = await res.json();
 
       if (result.success) {
-        alert("Profile picture deleted.");
-        const currentPic = document.getElementById("currentProfilePic");
+        Swal.fire("Deleted", "Profile picture deleted.", "success");
         currentPic.src = "";
         currentPic.style.display = "none";
       } else {
-        alert(result.message || "Failed to delete picture.");
+        Swal.fire("Delete Failed", result.message || "Could not delete picture.", "error");
       }
     } catch (error) {
       console.error("Error deleting profile picture:", error);
-      alert("Something went wrong while deleting the picture.");
+      Swal.fire("Error", "Something went wrong while deleting the picture.", "error");
     }
   });
 
+  // Stats + dropdown
   const today = new Date();
-
   const signedInTodayUsers = Object.values(users).filter((u) => {
     const signInDate = new Date(u.signInDate);
     return (

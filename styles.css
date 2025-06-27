@@ -138,6 +138,65 @@ form {
     font-family: var(--main-font)
 }
 
+#userDetails {
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  width: 600px;
+  height: 600px;
+  font-family: var(--main-font);
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+#userTextInfo {
+  flex: 1;
+}
+
+#profilePicOnly {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 160px;
+}
+
+#currentProfilePic {
+  max-width: 150px;
+  height: auto;
+}
+
+
+#profilePicSection {
+  margin-top: 40px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+#currentProfilePic {
+  display: block;
+  margin: 0 auto 15px auto;
+  max-width: 150px;
+}
+
+.centerInputWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+  margin-left: 13%;
+}
+
+
+#profilePicButtons, #userButtons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
 
 #userList ul {
     list-style-type: none;

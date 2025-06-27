@@ -4,7 +4,7 @@ document.getElementById("uploadPicBtn").addEventListener("click", async () => {
   const email = window.selectedUserEmail;
 
   if (!file || !email) {
-    alert("No file or user selected.");
+    Swal.fire("Missing Info", "Please select a file and a user.", "warning");
     return;
   }
 
@@ -21,25 +21,34 @@ document.getElementById("uploadPicBtn").addEventListener("click", async () => {
     const result = await res.json();
 
     if (result.success) {
-      alert("Profile picture uploaded!");
-      document.getElementById("currentProfilePic").src = `/uploads/${email}.jpg?${Date.now()}`;
+      await Swal.fire("Success", "Profile picture uploaded!", "success");
+      // Reload the page to reflect new image
+      location.reload();
     } else {
-      alert("Upload failed.");
+      Swal.fire("Upload Failed", result.message || "Upload failed.", "error");
     }
   } catch (err) {
     console.error("Error:", err);
-    alert("Something went wrong.");
+    Swal.fire("Error", "Something went wrong.", "error");
   }
 });
 
 document.getElementById("deletePicBtn").addEventListener("click", async () => {
   const email = window.selectedUserEmail;
   if (!email) {
-    alert("No user selected.");
+    Swal.fire("No User", "Please select a user first.", "warning");
     return;
   }
 
-  if (!confirm("Are you sure you want to delete the profile picture?")) return;
+  const confirmation = await Swal.fire({
+    title: "Are you sure?",
+    text: "This will permanently delete the profile picture.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+  });
+
+  if (!confirmation.isConfirmed) return;
 
   try {
     const res = await fetch("/api/delete-profile-pic", {
@@ -53,15 +62,15 @@ document.getElementById("deletePicBtn").addEventListener("click", async () => {
     const result = await res.json();
 
     if (result.success) {
-      alert("Profile picture deleted.");
+      Swal.fire("Deleted", "Profile picture has been removed.", "success");
       const currentPic = document.getElementById("currentProfilePic");
       currentPic.src = "";
       currentPic.style.display = "none";
     } else {
-      alert(result.message || "Failed to delete picture.");
+      Swal.fire("Delete Failed", result.message || "Could not delete the picture.", "error");
     }
   } catch (error) {
     console.error("Error deleting profile picture:", error);
-    alert("Something went wrong while deleting the picture.");
+    Swal.fire("Error", "Something went wrong while deleting the picture.", "error");
   }
 });
