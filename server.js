@@ -7,6 +7,8 @@ const PORT = process.env.PORT || 3001;
 const http = require("http");
 const router = express.Router();
 const generateWaiverPDF = require('./generateWaiver');
+const multer = require("multer");
+const fs = require("fs");
 
 const wordList = require('./words');
 
@@ -209,19 +211,102 @@ app.post("/register", (req, res) => {
   });
 });
 
-// Login Route
-// app.post('/login', (req, res) => {
-//     const { username, password } = req.body;
-//     const sql = 'SELECT * FROM users WHERE username = ? AND password = ?';
-//     db.query(sql, [username, password], (err, result) => {
-//         if (err) throw err;
-//         if (result.length > 0) {
-//             res.json({ message: 'Login successful' });
-//         } else {
-//             res.status(401).json({ error: 'Invalid credentials' });
-//         }
-//     });
-// });
+// Profile Routes
+const uploadDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Save file with temporary unique name (timestamp + original extension)
+    const tempName = Date.now() + path.extname(file.originalname);
+    cb(null, tempName);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/jpg"];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
+app.post("/api/upload-profile-pic", upload.single("image"), (req, res) => {
+  if (!req.file || !req.body.email) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing file or email." });
+  }
+
+  const email = req.body.email;
+  const safeEmail = email.replace(/[^a-zA-Z0-9.@_-]/g, "");
+  const newFilename = `${safeEmail}.jpg`;
+
+  const oldPath = req.file.path;
+  const newPath = path.join(uploadDir, newFilename);
+
+  fs.rename(oldPath, newPath, (err) => {
+    if (err) {
+      console.error("Error renaming file:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "File rename failed." });
+    }
+
+    return res.json({ success: true, message: "Image uploaded successfully." });
+  });
+});
+
+app.delete("/api/delete-profile-pic", (req, res) => {
+  const email = req.body.email;
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email required." });
+  }
+
+  const safeEmail = email.replace(/[^a-zA-Z0-9.@_-]/g, "");
+  const filePath = path.join(uploadDir, `${safeEmail}.jpg`);
+
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      // File doesn’t exist
+      return res
+        .status(404)
+        .json({ success: false, message: "Profile picture not found." });
+    }
+
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.error("Error deleting file:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "Failed to delete picture." });
+      }
+
+      res.json({ success: true, message: "Profile picture deleted." });
+    });
+  });
+});
+
+app.get("/api/check-profile-pic/:email", (req, res) => {
+  const email = req.params.email;
+  const safeEmail = email.replace(/[^a-zA-Z0-9.@_-]/g, "");
+  const imagePath = path.join(__dirname, "uploads", `${safeEmail}.jpg`);
+
+  fs.access(imagePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      return res.json({ exists: false });
+    }
+    return res.json({ exists: true });
+  });
+});
 
 app.post("/check-login-id", (req, res) => {
   const { loginID } = req.body;

@@ -16,7 +16,6 @@ function generatePassword() {
     return;
   }
 
-
   fetch("/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -73,33 +72,55 @@ function filterUsersByEmail() {
       a.email.localeCompare(b.email)
     );
   } else {
-    matches = Object.values(users).filter(user =>
+    matches = Object.values(users).filter((user) =>
       user.email.toLowerCase().includes(search)
     );
   }
 
-  matches.forEach(user => {
+  matches.forEach((user) => {
     const item = document.createElement("li");
     item.textContent = user.email;
     item.onclick = () => {
       displayUserDetails(user.email);
       suggestionBox.innerHTML = "";
+      suggestionBox.style.display = "none";
       document.getElementById("emailSearch").value = user.email;
+
+      const profilePicSection = document.getElementById("profilePicSection");
+      const currentPic = document.getElementById("currentProfilePic");
+
+      profilePicSection.style.display = "block";
+      currentPic.src = `/uploads/${user.email}.jpg?${Date.now()}`;
+      currentPic.style.display = "block";
+      // check global
+      window.selectedUserEmail = user.email;
     };
     suggestionBox.appendChild(item);
   });
+
+  suggestionBox.style.display = matches.length ? "block" : "none";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const emailInput = document.getElementById("emailSearch");
   emailInput.addEventListener("focus", filterUsersByEmail);
+  emailInput.addEventListener("input", filterUsersByEmail);
 });
 
 
+window.displaySignedInUserDetailsByEmail = function () {
+  const selectedEmail = document.getElementById("signedInSelect").value;
+  if (selectedEmail) {
+    displayUserDetails(selectedEmail);
+    document.getElementById("signedInDropdown").style.display = "none";
+  }
+};
 
 function displayUserDetails(email) {
   const user = users[email];
   if (!user) return;
+
+  window.selectedUserEmail = email;
 
   const formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
     year: "numeric",
@@ -123,7 +144,97 @@ function displayUserDetails(email) {
     <strong>isSignedIn:</strong> ${user.isSignedIn}<br>
     <button onclick="editUser('${user.username}')">Edit</button>
     <button onclick="deleteUser('${user.username}')">Delete</button>
+    <div id="profilePicSection" style="margin-top:20px;">
+      <h4>Upload Profile Picture</h4>
+      <input type="file" id="profilePicInput" accept="image/*" />
+      <button id="uploadPicBtn">Upload</button>
+      <br>
+      <img id="currentProfilePic" src="" alt="Profile Picture" style="max-width: 150px; display:none;" />
+      <br>
+      <button id="deletePicBtn">Delete Profile Picture</button>
+    </div>
   `;
+
+  document.getElementById("userDetails").innerHTML = userDetails;
+
+  const profilePicSection = document.getElementById("profilePicSection");
+  profilePicSection.style.display = "block";
+
+  const currentPic = document.getElementById("currentProfilePic");
+
+  fetch(`/api/check-profile-pic/${email}`)
+    .then(res => res.json())
+    .then(({ exists }) => {
+      currentPic.src = exists
+        ? `/uploads/${email}.jpg?${Date.now()}`
+        : "/default-profile-pic.jpg";
+      currentPic.style.display = "block";
+    })
+    .catch(() => {
+      currentPic.src = "/default-profile-pic.jpg";
+      currentPic.style.display = "block";
+    });
+
+  document.getElementById("uploadPicBtn").addEventListener("click", async () => {
+    const fileInput = document.getElementById("profilePicInput");
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert("No file selected.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("email", email);
+
+    try {
+      const res = await fetch("/api/upload-profile-pic", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        alert("Profile picture uploaded!");
+        document.getElementById("currentProfilePic").src = `/uploads/${email}.jpg?${Date.now()}`;
+      } else {
+        alert("Upload failed.");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Something went wrong.");
+    }
+  });
+
+  document.getElementById("deletePicBtn").addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to delete the profile picture?")) return;
+
+    try {
+      const res = await fetch("/api/delete-profile-pic", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        alert("Profile picture deleted.");
+        const currentPic = document.getElementById("currentProfilePic");
+        currentPic.src = "";
+        currentPic.style.display = "none";
+      } else {
+        alert(result.message || "Failed to delete picture.");
+      }
+    } catch (error) {
+      console.error("Error deleting profile picture:", error);
+      alert("Something went wrong while deleting the picture.");
+    }
+  });
 
   const today = new Date();
 
@@ -137,7 +248,9 @@ function displayUserDetails(email) {
   });
 
   const totalSignedInToday = signedInTodayUsers.length;
-  const signedInWithMembership = signedInTodayUsers.filter(u => u.membership > 0).length;
+  const signedInWithMembership = signedInTodayUsers.filter(
+    (u) => u.membership > 0
+  ).length;
   const signedInWithoutMembership = totalSignedInToday - signedInWithMembership;
 
   const statsHtml = `
@@ -158,9 +271,9 @@ function displayUserDetails(email) {
 
   signedInDropdown += `</select>`;
 
-  document.getElementById("userDetails").innerHTML = userDetails;
   document.getElementById("userStats").innerHTML = statsHtml;
   document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
+  document.getElementById("signedInDropdown").style.display = "block";
 }
 
 
@@ -191,94 +304,140 @@ function displaySignedInUserDetailsByEmail() {
   document.getElementById("signedInUserDetails").innerHTML = userDetails;
 }
 
-
 function editUser(username) {
-  let newPassword = prompt(
-    `Enter new password for ${username} (leave blank to keep unchanged):`
-  );
-
-  
-  // let newFirstName = prompt(
-  //   `Enter new first name for ${username} (leave blank to keep unchanged):`
-  // );
-  // let newLastName = prompt(
-  //   `Enter new last name for ${username} (leave blank to keep unchanged):`
-  // );
-  let newEmail = prompt(
-    `Enter new email for ${username} (leave blank to keep unchanged):`
-  );
-
-  let newregistered = confirm(
-    `Approve user ${username}? Click OK for Yes, Cancel for No.`
-  )
-    ? 1
-    : 0;
-
-  let newMembership = prompt(
-    `Enter new membership for ${username} (leave blank to keep unchanged):`
-  );
-  // let newSignInDate = prompt(
-  //   `Enter new sign-in date for ${username} (leave blank to keep unchanged):`
-  // );
-  let newIsSignedIn = confirm(
-    `Is ${username} currently signed in? Click OK for Yes, Cancel for No.`
-  )
-    ? 1
-    : 0;
-
-  let updatedData = {};
-
-  if (newPassword) updatedData.password = newPassword;
-  // if (newFirstName) updatedData.firstName = newFirstName;
-  // if (newLastName) updatedData.lastName = newLastName;
-  if (newEmail) {
-    updatedData.email = newEmail;
-    updatedData.username = newEmail;
-  }
-  if (newMembership) updatedData.membership = newMembership;
-  // if (newSignInDate) updatedData.signInDate = newSignInDate;
-  updatedData.isSignedIn = newIsSignedIn;
-  updatedData.registered = newregistered;
-
-  if (Object.keys(updatedData).length === 0) {
-    alert("No changes were made.");
-    return;
-  }
-
-  fetch(`/users/${username}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
+  Swal.fire({
+    title: `Edit User: ${username}`,
+    width: "800px",
+    customClass: {
+      popup: "edit-user-modal",
     },
-    body: JSON.stringify(updatedData),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.error) {
-        alert(`Error: ${data.error}`);
-      } else {
-        alert(`User ${username} updated successfully!`);
-        showUsers();
-        location.reload();
+    html: `
+      <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="swal-password" style="width: 200px;">New Password:</label>
+          <input type="password" id="swal-password" class="swal2-input" style="flex: 1;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="swal-email" style="width: 200px;">New Email:</label>
+          <input type="email" id="swal-email" class="swal2-input" style="flex: 1;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="swal-membership" style="width: 200px;">New Membership:</label>
+          <input type="text" id="swal-membership" class="swal2-input" style="flex: 1;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="swal-registered" style="width: 200px;">Registered:</label>
+          <select id="swal-registered" class="swal2-select" style="flex: 1;">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="swal-signedIn" style="width: 200px;">Signed In:</label>
+          <select id="swal-signedIn" class="swal2-select" style="flex: 1;">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+      </div>
+    `,
+    confirmButtonText: "Save",
+    showCancelButton: true,
+    focusConfirm: false,
+    preConfirm: () => {
+      return {
+        password: document.getElementById("swal-password").value,
+        email: document.getElementById("swal-email").value,
+        membership: document.getElementById("swal-membership").value,
+        registered: parseInt(document.getElementById("swal-registered").value),
+        isSignedIn: parseInt(document.getElementById("swal-signedIn").value),
+      };
+    },
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const values = result.value;
+      let updatedData = {};
+
+      if (values.password) updatedData.password = values.password;
+      if (values.email) {
+        updatedData.email = values.email;
+        updatedData.username = values.email;
       }
-    })
-    .catch((err) => console.error("Error updating user:", err));
+      if (values.membership) updatedData.membership = values.membership;
+
+      updatedData.registered = values.registered;
+      updatedData.isSignedIn = values.isSignedIn;
+
+      if (Object.keys(updatedData).length === 0) {
+        Swal.fire("No changes made", "", "info");
+        return;
+      }
+
+      fetch(`/users/${username}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            Swal.fire("Error", data.error, "error");
+          } else {
+            Swal.fire("Success", `User ${username} updated successfully!`, "success").then(() => {
+              showUsers();
+              location.reload();
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("Error updating user:", err);
+          Swal.fire("Error", "An unexpected error occurred.", "error");
+        });
+    }
+  });
 }
+
 
 function deleteUser(username) {
-  if (confirm(`Are you sure you want to delete ${username}?`)) {
-    fetch(`/users/${username}`, {
-      method: "DELETE",
-    })
-      .then((response) => response.json())
-      .then(() => {
-        alert(`${username} deleted`);
-        showUsers();
-        location.reload();
+  Swal.fire({
+    title: `Delete ${username}?`,
+    text: "This action cannot be undone.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, delete",
+    cancelButtonText: "Cancel",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      fetch(`/users/${username}`, {
+        method: "DELETE",
       })
-      .catch((err) => console.error("Error deleting user:", err));
-  }
+        .then((response) => response.json())
+        .then(() => {
+          Swal.fire({
+            title: "Deleted!",
+            text: `${username} has been deleted.`,
+            icon: "success",
+          }).then(() => {
+            showUsers();
+            location.reload();
+          });
+        })
+        .catch((err) => {
+          console.error("Error deleting user:", err);
+          Swal.fire("Error", "Could not delete the user.", "error");
+        });
+    }
+  });
 }
+
 
 async function validateUser(username, password) {
   try {
@@ -294,7 +453,7 @@ async function validateUser(username, password) {
       throw new Error(data.error || "Validation failed");
     }
 
-    return true; 
+    return true;
   } catch (error) {
     Swal.fire({ icon: "error", title: error.message });
     return false;
@@ -327,7 +486,9 @@ async function bookCourt() {
   );
 
   for (let i = 1; i <= 4; i++) {
-    const username = document.getElementById(`bookingUsername${i}`).value;
+    const username = document
+      .getElementById(`bookingUsername${i}`)
+      .value.toLowerCase();
     const password = document.getElementById(`bookingPassword${i}`).value;
 
     if (username && password) {
@@ -363,7 +524,7 @@ async function bookCourt() {
     startCountdown(court);
   } else if (currentPlayers.length === 2 && enteredPlayers.length === 2) {
     const totalPlayers = [...currentPlayers, ...enteredPlayers];
-  
+
     const uniquePlayers = new Set(totalPlayers);
     if (uniquePlayers.size < totalPlayers.length) {
       Swal.fire({
@@ -372,7 +533,7 @@ async function bookCourt() {
       });
       return;
     }
-  
+
     courts[court].currentPlayers = totalPlayers;
   } else {
     if (courts[court].queue.length < 3) {
@@ -495,7 +656,6 @@ async function unbookCourt() {
   });
 }
 
-
 function saveCourtData() {
   fetch("/update-courts", {
     method: "POST",
@@ -515,7 +675,7 @@ function loadCourtData() {
         courts = data.courts;
         renderAndStart();
       } else if (data.version !== currentVersion) {
-        location.reload(); 
+        location.reload();
       }
     })
     .catch((err) => console.error("Error fetching courts:", err));
@@ -573,7 +733,10 @@ function renderCourts() {
   const courtEntries = Object.entries(courts);
 
   courtEntries.forEach(([court, details], index) => {
-    let isUnavailable = (typeof courtsData !== "undefined" && courtsData[court] === "unavailable") || court === "Rest Area";
+    let isUnavailable =
+      (typeof courtsData !== "undefined" &&
+        courtsData[court] === "unavailable") ||
+      court === "Rest Area";
     let minutes = Math.floor(details.timeLeft / 60);
     let seconds = details.timeLeft % 60;
 
@@ -597,25 +760,33 @@ function renderCourts() {
     courtDisplay += `<p class="status">${statusText}</p>`;
 
     if (!isUnavailable && courtStatusClass === "closed") {
-      courtDisplay += `<p>Time Left: ${minutes}:${seconds.toString().padStart(2, "0")}</p>`;
+      courtDisplay += `<p>Time Left: ${minutes}:${seconds
+        .toString()
+        .padStart(2, "0")}</p>`;
     }
 
     if (!isUnavailable) {
       courtDisplay += `<p>Current Players: ${
-        details.currentPlayers.length ? details.currentPlayers.join(", ") : "None"
+        details.currentPlayers.length
+          ? details.currentPlayers.join(", ")
+          : "None"
       }</p>`;
     }
 
     if (isAdminPage && !isUnavailable) {
       details.currentPlayers.forEach((player, i) => {
-        courtDisplay += `<p>Player ${i + 1}: ${player} <button class="remove-btn" onclick="removePlayer('${court}', ${i})">Remove</button></p>`;
+        courtDisplay += `<p>Player ${
+          i + 1
+        }: ${player} <button class="remove-btn" onclick="removePlayer('${court}', ${i})">Remove</button></p>`;
       });
     }
 
     if (!isUnavailable) {
       for (let i = 0; i < 3; i++) {
         courtDisplay += `<p>Queue ${i + 1}: ${
-          details.queue[i] && details.queue[i].length ? details.queue[i].join(", ") : "Empty"
+          details.queue[i] && details.queue[i].length
+            ? details.queue[i].join(", ")
+            : "Empty"
         }</p>`;
       }
     }
@@ -636,9 +807,7 @@ function renderCourts() {
       <div class="row middle-row">${middleRow}</div>
       <div class="row last-row">${lastRow}</div>
   `;
-
 }
-
 
 function removePlayer(court, playerIndex) {
   const courtData = courts[court];

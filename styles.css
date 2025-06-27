@@ -148,6 +148,11 @@ form {
     margin-bottom: 10px;
 }
 
+.edit-user-modal {
+  height: 600px; 
+}
+
+
 /* Court Booking Form */
 h3 {
     margin-top: 30px;
