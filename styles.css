@@ -164,11 +164,6 @@ form {
   min-width: 160px;
 }
 
-#currentProfilePic {
-  max-width: 150px;
-  height: auto;
-}
-
 
 #profilePicSection {
   margin-top: 40px;
@@ -179,7 +174,9 @@ form {
 #currentProfilePic {
   display: block;
   margin: 0 auto 15px auto;
-  max-width: 150px;
+  max-width: 200px;
+  max-height: 300px;
+  margin-top: 15px;
 }
 
 .centerInputWrapper {
