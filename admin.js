@@ -213,13 +213,13 @@ function createDefaultSuperAdmin() {
         [username, hash],
         (err) => {
           if (err) return console.error("Error inserting admin:", err);
-          console.log(`Admin '${username}' created with password '${plainPassword}'.`);
+          console.log(`Admin '${username}' created.`);
         }
       );
     });
   });
 }
 
-createDefaultSuperAdmin();
+setTimeout(createDefaultSuperAdmin, 2000); 
 
 module.exports = router;

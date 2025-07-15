@@ -42,5 +42,10 @@ if (result.superadmin) {
     }
   });
 </script>
+<script>
+  window.addEventListener("pageshow", function () {
+    document.querySelector("#loginForm").reset();
+  });
+</script>
 </body>
 </html>
