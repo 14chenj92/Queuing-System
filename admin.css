@@ -1,0 +1,36 @@
+#admin-login-btn {
+    margin-top: 30px;
+}
+
+input[type="text"], [type="password"] {
+width: 300px !important;
+font-size: 23px !important;
+  }
+
+#message, #logoutBtn {
+    margin-top: 30px;
+}
+
+.superadmin-box {
+    display: flex;
+    justify-content: center;
+    gap: 70px;
+}
+
+.manage-admins {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 110px;
+}
+
+.admin-btns {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 70px;
+}
+
+#editAdminBtn, #deleteAdminBtn {
+    background-color: #fff;
+}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Superadmin Dashboard</title>
+  <link rel="stylesheet" href="reset.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="superadmin-box">
+    <section>
+      <h2>Create New Admin</h2>
+      <form id="createAdminForm">
+        <label for="newUsername">Username:</label>
+        <input type="text" id="newUsername" name="username" required />
+        <label for="newPassword">Password:</label>
+        <input type="password" id="newPassword" name="password" required />
+        <button type="submit">Create Admin</button>
+        <div id="createAdminMessage" class="message"></div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Manage Existing Admins</h2>
+        <div class="manage-admins">
+        <select id="adminSelect">
+          <option value="">-- Select Admin --</option>
+        </select>
+      </div>
+        <div class="admin-btns">
+        <button id="editAdminBtn" disabled>Edit</button>
+        <button id="deleteAdminBtn" disabled>Delete</button>
+      </div>
+    </section>
+  </div>
+
+  <button id="logoutBtn">Logout</button>
+
+  <script>
+    async function postData(url = '', data = {}) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return res.json();
+    }
+
+    async function deleteData(url = '', data = {}) {
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return res.json();
+    }
+
+    async function loadAdmins() {
+      const res = await fetch('/admin/list');
+      const admins = await res.json();
+
+      const select = document.getElementById('adminSelect');
+      select.innerHTML = '<option value="">-- Select Admin --</option>';
+
+      admins
+        .filter(a => a.username !== 'admin21')
+        .forEach(admin => {
+          const option = document.createElement('option');
+          option.value = admin.username;
+          option.textContent = admin.username;
+          select.appendChild(option);
+        });
+
+      document.getElementById('editAdminBtn').disabled = true;
+      document.getElementById('deleteAdminBtn').disabled = true;
+    }
+
+    document.getElementById('adminSelect').addEventListener('change', (e) => {
+      const selected = e.target.value;
+      document.getElementById('editAdminBtn').disabled = !selected;
+      document.getElementById('deleteAdminBtn').disabled = !selected;
+    });
+
+    document.getElementById('createAdminForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = e.target.username.value.trim();
+      const password = e.target.password.value;
+
+      const result = await postData('/admin/create', { username, password });
+      const msgDiv = document.getElementById('createAdminMessage');
+      msgDiv.textContent = result.message || 'Error creating admin.';
+      await loadAdmins();
+      window.location.reload();
+    });
+
+    document.getElementById('editAdminBtn').addEventListener('click', async () => {
+      const selectedAdmin = document.getElementById('adminSelect').value;
+      if (!selectedAdmin) return;
+
+      const { value: formValues } = await Swal.fire({
+        title: 'Edit Admin',
+        html:
+          `<input id="swal-new-username" class="swal2-input" placeholder="New Username">` +
+          `<input id="swal-new-password" class="swal2-input" placeholder="New Password">`,
+        focusConfirm: false,
+        preConfirm: () => {
+          return {
+            newUsername: document.getElementById('swal-new-username').value.trim(),
+            newPassword: document.getElementById('swal-new-password').value.trim()
+          };
+        }
+      });
+
+      if (!formValues?.newUsername || !formValues?.newPassword) {
+        return Swal.fire("Error", "Both fields are required.", "error");
+      }
+
+      const editRes = await postData('/admin/edit', {
+        oldUsername: selectedAdmin,
+        newUsername: formValues.newUsername,
+        newPassword: formValues.newPassword
+      });
+
+      Swal.fire("Edit Result", editRes.message || editRes.error, editRes.message ? "success" : "error");
+      await loadAdmins();
+    });
+
+    document.getElementById('deleteAdminBtn').addEventListener('click', async () => {
+      const selectedAdmin = document.getElementById('adminSelect').value;
+      if (!selectedAdmin) return;
+
+      const confirm = await Swal.fire({
+        title: "Are you sure?",
+        text: `This will permanently delete "${selectedAdmin}".`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!"
+      });
+
+      if (confirm.isConfirmed) {
+        const delRes = await deleteData('/admin/delete', { username: selectedAdmin });
+        Swal.fire("Delete Result", delRes.message || delRes.error, delRes.message ? "success" : "error");
+        await loadAdmins();
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/admin/logout', { method: 'POST' });
+      window.location.href = '/admin-login.html';
+    });
+
+    window.addEventListener('DOMContentLoaded', loadAdmins);
+  </script>
+</body>
+</html>

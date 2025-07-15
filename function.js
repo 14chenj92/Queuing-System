@@ -72,9 +72,10 @@ function filterUsersByEmail() {
       a.email.localeCompare(b.email)
     );
   } else {
-    matches = Object.values(users).filter((user) =>
-      user.email.toLowerCase().includes(search)
-    );
+matches = Object.entries(users)
+  .filter(([email]) => email.includes(search))
+  .map(([, user]) => user);
+
   }
 
   matches.forEach((user) => {
@@ -117,10 +118,10 @@ window.displaySignedInUserDetailsByEmail = function () {
 };
 
 function displayUserDetails(email) {
-  const user = users[email];
+  const user = users[email.toLowerCase()];
   if (!user) return;
 
-  window.selectedUserEmail = email;
+  window.selectedUserEmail = email.toLowerCase();
 
   const formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
     year: "numeric",

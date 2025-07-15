@@ -9,6 +9,11 @@ const router = express.Router();
 const generateWaiverPDF = require('./generateWaiver');
 const multer = require("multer");
 const fs = require("fs");
+const db = require("./db");
+
+
+const { requireAdminAuth } = require("./middleware/auth");
+const adminRoutes = require("./admin");
 
 const wordList = require('./words');
 
@@ -43,6 +48,30 @@ app.use(
     },
   })
 );
+
+// admin login routes + auth
+
+app.use(express.json());
+app.use(express.static("public"));
+
+app.use(session({
+  secret: "your_secret_key",
+  resave: false,
+  saveUninitialized: false,
+}));
+
+app.use("/admin", adminRoutes);
+
+app.get("/admin.html", requireAdminAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/superadmin.html", requireAdminAuth, (req, res) => {
+  if (req.session.adminUser !== "admin21") {
+    return res.redirect("/admin.html");
+  }
+  res.sendFile(path.join(__dirname, "superadmin.html"));
+});
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "main.html"));
@@ -105,33 +134,6 @@ app.post("/verify-code", async (req, res) => {
 //   database: process.env.DB_NAME,
 // });
 
-let db;
-
-if (process.env.JAWSDB_URL) {
-  db = mysql.createPool(process.env.JAWSDB_URL);
-} else {
-  db = mysql.createPool({
-    host: 'localhost',
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: 3306,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 10000
-  });
-}
-
-// Connecting to the database
-db.query('SELECT 1', (err, results) => {
-  if (err) {
-    console.error("Error testing database connection:", err.stack);
-    return;
-  }
-  console.log("Database connection pool is working.");
-});
 
 // User Table
 const createUsersTable = `
@@ -160,6 +162,15 @@ CREATE TABLE IF NOT EXISTS court_players (
 );
 `;
 
+const createAdminsTable = `
+CREATE TABLE IF NOT EXISTS admins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(30) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL
+);
+`;
+
+
 db.query(createUsersTable, (err) => {
   if (err) throw err;
   console.log("Users table created");
@@ -168,6 +179,11 @@ db.query(createUsersTable, (err) => {
 db.query(createCourtsTable, (err) => {
   if (err) throw err;
   console.log("Court table created");
+});
+
+db.query(createAdminsTable, (err) => {
+  if (err) throw err;
+  console.log("Admins table created");
 });
 
 function generateRandomPassword(callback) {
@@ -836,3 +852,4 @@ app.use(express.static(__dirname));
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
