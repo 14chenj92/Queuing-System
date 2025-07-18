@@ -476,6 +476,7 @@ async function validateUser(username, password) {
 }
 
 async function bookCourt() {
+  await loadCourtData();
   const court = document.getElementById("courtSelection").value;
   let enteredUsernames = [];
   let enteredFullNames = [];
@@ -624,9 +625,10 @@ async function unbookCourt() {
     return;
   }
 
-  const allBookedUsernames = Object.values(courts).flatMap(
-    (court) => court.currentUsernames || []
-  );
+  const allBookedUsernames = Object.values(courts).flatMap(court => [
+    ...(court.currentUsernames || []),
+    ...(court.queueUsernames ? court.queueUsernames.flat() : []),
+  ]);
 
   for (let i = 1; i <= 4; i++) {
     const username = document.getElementById(`unbookingUsername${i}`).value.trim().toLowerCase();
@@ -647,7 +649,7 @@ async function unbookCourt() {
       if (!allBookedUsernames.includes(username)) {
         Swal.fire({
           icon: "error",
-          title: `User ${users[username]} is not part of any court booking.`,
+          title: `User ${users[username]} is not part of any court booking or queue.`,
         });
         return;
       }
@@ -667,37 +669,33 @@ async function unbookCourt() {
   let unbookedUsernames = [];
 
   for (const courtName in courts) {
-    const courtBooking = courts[courtName];
-    const currentUsernames = courtBooking.currentUsernames || [];
-    const currentPlayers = courtBooking.currentPlayers || [];
+    const court = courts[courtName];
+    const { currentUsernames = [], currentPlayers = [], queue = [], queueUsernames = [] } = court;
 
-    const playersToUnbook = enteredUsernames.filter((username) =>
-      currentUsernames.includes(username)
-    );
+    const playersToUnbook = enteredUsernames.filter((username) => currentUsernames.includes(username));
 
     if (playersToUnbook.length > 0) {
-      courtBooking.currentUsernames = currentUsernames.filter(
-        (username) => !playersToUnbook.includes(username)
-      );
-
-      courtBooking.currentPlayers = currentPlayers.filter(
-        (fullName, index) => !playersToUnbook.includes(currentUsernames[index])
-      );
-
+      court.currentUsernames = currentUsernames.filter(username => !playersToUnbook.includes(username));
+      court.currentPlayers = currentPlayers.filter((_, i) => !playersToUnbook.includes(currentUsernames[i]));
       unbookedUsernames.push(...playersToUnbook);
 
-      if (courtBooking.currentUsernames.length === 0) {
-        courtBooking.timeLeft = 0;
+      if (court.currentUsernames.length === 0 && court.queue.length > 0) {
+        const nextQueuePlayers = court.queue.shift();
+        const nextQueueUsernames = court.queueUsernames.shift();
+        court.currentPlayers = nextQueuePlayers;
+        court.currentUsernames = nextQueueUsernames;
+        court.timeLeft = 1800;
+        startCountdown(courtName);
+      }
+    }
 
-        if (courtBooking.queue.length > 0) {
-          const nextQueuePlayers = courtBooking.queue.shift();
-          const nextQueueUsernames = courtBooking.queueUsernames.shift();
-
-          courtBooking.currentPlayers = nextQueuePlayers;
-          courtBooking.currentUsernames = nextQueueUsernames;
-          courtBooking.timeLeft = 1800;
-          startCountdown(courtName);
-        }
+    for (let i = queueUsernames.length - 1; i >= 0; i--) {
+      const usernames = queueUsernames[i];
+      const hasAnyToRemove = usernames.some(username => enteredUsernames.includes(username));
+      if (hasAnyToRemove) {
+        queueUsernames.splice(i, 1);
+        queue.splice(i, 1);
+        unbookedUsernames.push(...usernames.filter(username => enteredUsernames.includes(username)));
       }
     }
   }
@@ -705,19 +703,19 @@ async function unbookCourt() {
   if (unbookedUsernames.length === 0) {
     Swal.fire({
       icon: "error",
-      title: "No matching players found for unbooking.",
+      title: "No matching players found in bookings or queue.",
     });
     return;
   }
 
-  saveCourtData();
+  saveCourtData(); 
   clearBookingFields();
   renderCourts();
 
   Swal.fire({
     icon: "success",
-    title: "Court Unbooked Successfully",
-    text: `Players ${unbookedUsernames.map((username) => users[username]).join(", ")} have been successfully unbooked from their court(s).`,
+    title: "Players Unbooked Successfully",
+    text: `Players ${unbookedUsernames.map(username => users[username]).join(", ")} have been removed from their court(s) or queue.`,
   });
 }
 
@@ -800,8 +798,7 @@ function renderCourts() {
 
   courtEntries.forEach(([court, details], index) => {
     let isUnavailable =
-      (typeof courtsData !== "undefined" &&
-        courtsData[court] === "unavailable") ||
+      (typeof courtsData !== "undefined" && courtsData[court] === "unavailable") ||
       court === "Rest Area";
     let minutes = Math.floor(details.timeLeft / 60);
     let seconds = details.timeLeft % 60;
@@ -826,33 +823,37 @@ function renderCourts() {
     courtDisplay += `<p class="status">${statusText}</p>`;
 
     if (!isUnavailable && courtStatusClass === "closed") {
-      courtDisplay += `<p>Time Left: ${minutes}:${seconds
-        .toString()
-        .padStart(2, "0")}</p>`;
+      courtDisplay += `<p>Time Left: ${minutes}:${seconds.toString().padStart(2, "0")}</p>`;
     }
 
     if (!isUnavailable) {
       courtDisplay += `<p>Current Players: ${
-        details.currentPlayers.length
-          ? details.currentPlayers.join(", ")
-          : "None"
+        details.currentPlayers.length ? details.currentPlayers.join(", ") : "None"
       }</p>`;
     }
 
     if (isAdminPage && !isUnavailable) {
       details.currentPlayers.forEach((player, i) => {
-        courtDisplay += `<p>Player ${
-          i + 1
-        }: ${player} <button class="remove-btn" onclick="removePlayer('${court}', ${i})">Remove</button></p>`;
+        courtDisplay += `<p>Player ${i + 1}: ${player} <button class="remove-btn" onclick="removePlayer('${court}', ${i})">Remove</button></p>`;
       });
-    }
 
-    if (!isUnavailable) {
+      for (let q = 0; q < 3; q++) {
+        const queueGroup = details.queue[q] || [];
+        courtDisplay += `<p>Queue ${q + 1}: `;
+        if (queueGroup.length > 0) {
+          queueGroup.forEach((player, i) => {
+            courtDisplay += `${player} <button class="remove-btn" onclick="removeQueuedPlayer('${court}', ${q}, ${i})">Remove</button>`;
+            if (i < queueGroup.length - 1) courtDisplay += ", ";
+          });
+        } else {
+          courtDisplay += "Empty";
+        }
+        courtDisplay += `</p>`;
+      }
+    } else if (!isUnavailable) {
       for (let i = 0; i < 3; i++) {
         courtDisplay += `<p>Queue ${i + 1}: ${
-          details.queue[i] && details.queue[i].length
-            ? details.queue[i].join(", ")
-            : "Empty"
+          details.queue[i] && details.queue[i].length ? details.queue[i].join(", ") : "Empty"
         }</p>`;
       }
     }
@@ -875,39 +876,64 @@ function renderCourts() {
   `;
 }
 
-function removePlayer(court, playerIndex) {
-  const courtData = courts[court];
-  const playerName = courtData.currentPlayers[playerIndex];
+function removePlayer(courtName, playerIndex) {
+  const court = courts[courtName];
+  if (!court || !court.currentPlayers) return;
 
-  if (playerName) {
-    courtData.currentPlayers.splice(playerIndex, 1);
 
-    if (courtData.queue && courtData.queue.length > 0) {
-      const nextPlayer = courtData.queue.shift();
+  court.currentPlayers.splice(playerIndex, 1);
 
-      courts[court].timeLeft = 1800;
-
-      if (Array.isArray(nextPlayer)) {
-        courtData.currentPlayers.push(...nextPlayer);
-      } else if (nextPlayer) {
-        courtData.currentPlayers.push(nextPlayer);
-      }
-
-      resetCourtTimer(court);
-    }
-
-    Swal.fire({
-      icon: "success",
-      title: `${playerName} has been removed from ${court}`,
-    });
-
-    localStorage.setItem("courtsData", JSON.stringify(courts));
-    renderCourts();
-    saveCourtData();
-  } else {
-    Swal.fire({
-      icon: "error",
-      title: `Player not found.`,
-    });
-  }
+  saveCourtData().then(() => {
+    loadCourtData();         // Reload from server to sync version
+    clearBookingFields();    // Optional: clears input fields if used
+    renderCourts();          // Re-render courts to reflect changes
+  });
 }
+
+
+
+function removeQueuedPlayer(courtName, queueIndex, playerIndex) {
+  const court = courts[courtName];
+  if (!court || !court.queue || !court.queueUsernames) return;
+
+  court.queue[queueIndex].splice(playerIndex, 1);
+  court.queueUsernames[queueIndex].splice(playerIndex, 1);
+
+  if (court.queue[queueIndex].length === 0) {
+    court.queue.splice(queueIndex, 1);
+    court.queueUsernames.splice(queueIndex, 1);
+  }
+
+saveCourtData().then(() => {
+  loadCourtData();
+  clearBookingFields();
+  renderCourts();
+});
+
+}
+
+
+// async function removePlayer(courtName, playerIndex) {
+//   const court = courts[courtName];
+//   if (!court || !court.currentPlayers || !court.currentPlayers[playerIndex]) {
+//     Swal.fire({ icon: "error", title: `Player not found.` });
+//     return;
+//   }
+
+//   const removedPlayer = court.currentPlayers.splice(playerIndex, 1)[0];
+
+//   // If all players removed, clear time left and optionally stop timer
+//   if (court.currentPlayers.length === 0) {
+//     court.timeLeft = 0;
+//   }
+
+//   Swal.fire({
+//     icon: "success",
+//     title: `${removedPlayer} has been removed from ${courtName}`,
+//   });
+
+//   await saveCourtData();
+//   await loadCourtData();
+//   clearBookingFields();
+//   renderCourts();
+// }
