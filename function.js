@@ -477,14 +477,15 @@ async function validateUser(username, password) {
 
 async function bookCourt() {
   const court = document.getElementById("courtSelection").value;
-  let enteredPlayers = [];
+  let enteredUsernames = [];
+  let enteredFullNames = [];
 
   let users = {};
   try {
     const response = await fetch("/users");
     const data = await response.json();
     users = data.reduce((acc, user) => {
-      acc[user.username] = `${user.firstName} ${user.lastName}`;
+      acc[user.username.toLowerCase()] = `${user.firstName} ${user.lastName}`;
       return acc;
     }, {});
   } catch (error) {
@@ -496,21 +497,38 @@ async function bookCourt() {
     return;
   }
 
-  const allBookedPlayers = Object.values(courts).flatMap(
-    (court) => court.currentPlayers
+  // Gather all booked usernames (not display names!)
+  const allBookedUsernames = Object.values(courts).flatMap(
+    (court) => court.currentUsernames || []
   );
+
+  // Gather all queued usernames
+  const allQueuedUsernames = Object.values(courts)
+    .flatMap((court) => court.queueUsernames || [])
+    .flat();
 
   for (let i = 1; i <= 4; i++) {
     const username = document
       .getElementById(`bookingUsername${i}`)
-      .value.toLowerCase();
+      .value
+      .trim()
+      .toLowerCase();
+
     const password = document.getElementById(`bookingPassword${i}`).value;
 
     if (username && password) {
+      if (!users[username]) {
+        Swal.fire({
+          icon: "error",
+          title: `User "${username}" not found.`,
+        });
+        return;
+      }
+
       const isValid = await validateUser(username, password);
       if (!isValid) return;
 
-      if (allBookedPlayers.includes(users[username])) {
+      if (allBookedUsernames.includes(username)) {
         Swal.fire({
           icon: "error",
           title: `User ${users[username]} is already booked on another court.`,
@@ -518,12 +536,20 @@ async function bookCourt() {
         return;
       }
 
-      const fullName = users[username] || username;
-      enteredPlayers.push(fullName);
+      if (allQueuedUsernames.includes(username)) {
+        Swal.fire({
+          icon: "error",
+          title: `User ${users[username]} is already in a court queue.`,
+        });
+        return;
+      }
+
+      enteredUsernames.push(username);
+      enteredFullNames.push(users[username]);
     }
   }
 
-  if (enteredPlayers.length !== 2 && enteredPlayers.length !== 4) {
+  if (enteredUsernames.length !== 2 && enteredUsernames.length !== 4) {
     Swal.fire({
       icon: "error",
       title: "You can only book a court with 2 or 4 players.",
@@ -531,17 +557,23 @@ async function bookCourt() {
     return;
   }
 
-  const currentPlayers = courts[court].currentPlayers;
+  const currentUsernames = courts[court].currentUsernames || [];
+  const currentPlayers = courts[court].currentPlayers || [];
 
-  if (currentPlayers.length === 0) {
-    courts[court].currentPlayers = enteredPlayers;
+  if (currentUsernames.length === 0) {
+    courts[court].currentUsernames = enteredUsernames;
+    courts[court].currentPlayers = enteredFullNames;
     courts[court].timeLeft = 1800;
     startCountdown(court);
-  } else if (currentPlayers.length === 2 && enteredPlayers.length === 2) {
-    const totalPlayers = [...currentPlayers, ...enteredPlayers];
+  } else if (
+    currentUsernames.length === 2 &&
+    enteredUsernames.length === 2
+  ) {
+    const totalUsernames = [...currentUsernames, ...enteredUsernames];
+    const totalFullNames = [...currentPlayers, ...enteredFullNames];
 
-    const uniquePlayers = new Set(totalPlayers);
-    if (uniquePlayers.size < totalPlayers.length) {
+    const uniqueUsernames = new Set(totalUsernames);
+    if (uniqueUsernames.size < totalUsernames.length) {
       Swal.fire({
         icon: "error",
         title: "A player is already on this court.",
@@ -549,10 +581,15 @@ async function bookCourt() {
       return;
     }
 
-    courts[court].currentPlayers = totalPlayers;
+    courts[court].currentUsernames = totalUsernames;
+    courts[court].currentPlayers = totalFullNames;
   } else {
+    courts[court].queueUsernames = courts[court].queueUsernames || [];
+    courts[court].queue = courts[court].queue || [];
+
     if (courts[court].queue.length < 3) {
-      courts[court].queue.push(enteredPlayers);
+      courts[court].queue.push(enteredFullNames);
+      courts[court].queueUsernames.push(enteredUsernames);
     } else {
       Swal.fire({
         icon: "error",
@@ -568,14 +605,14 @@ async function bookCourt() {
 }
 
 async function unbookCourt() {
-  let enteredPlayers = [];
+  let enteredUsernames = [];
 
   let users = {};
   try {
     const response = await fetch("/users");
     const data = await response.json();
     users = data.reduce((acc, user) => {
-      acc[user.username] = `${user.firstName} ${user.lastName}`;
+      acc[user.username.toLowerCase()] = `${user.firstName} ${user.lastName}`;
       return acc;
     }, {});
   } catch (error) {
@@ -587,33 +624,39 @@ async function unbookCourt() {
     return;
   }
 
-  const allBookedPlayers = Object.values(courts).flatMap(
-    (court) => court.currentPlayers
+  const allBookedUsernames = Object.values(courts).flatMap(
+    (court) => court.currentUsernames || []
   );
 
   for (let i = 1; i <= 4; i++) {
-    const username = document.getElementById(`unbookingUsername${i}`).value;
+    const username = document.getElementById(`unbookingUsername${i}`).value.trim().toLowerCase();
     const password = document.getElementById(`unbookingPassword${i}`).value;
 
     if (username && password) {
-      const isValid = await validateUser(username, password);
-      if (!isValid) return;
-
-      const fullName = users[username] || username;
-
-      if (!allBookedPlayers.includes(fullName)) {
+      if (!users[username]) {
         Swal.fire({
           icon: "error",
-          title: `User ${fullName} is not part of any court booking.`,
+          title: `User "${username}" not found.`,
         });
         return;
       }
 
-      enteredPlayers.push(fullName);
+      const isValid = await validateUser(username, password);
+      if (!isValid) return;
+
+      if (!allBookedUsernames.includes(username)) {
+        Swal.fire({
+          icon: "error",
+          title: `User ${users[username]} is not part of any court booking.`,
+        });
+        return;
+      }
+
+      enteredUsernames.push(username);
     }
   }
 
-  if (enteredPlayers.length !== 2 && enteredPlayers.length !== 4) {
+  if (enteredUsernames.length !== 2 && enteredUsernames.length !== 4) {
     Swal.fire({
       icon: "error",
       title: "You must unbook exactly 2 or 4 players.",
@@ -621,28 +664,37 @@ async function unbookCourt() {
     return;
   }
 
-  let unbookedPlayers = [];
+  let unbookedUsernames = [];
 
   for (const courtName in courts) {
     const courtBooking = courts[courtName];
-    const currentPlayers = courtBooking.currentPlayers;
+    const currentUsernames = courtBooking.currentUsernames || [];
+    const currentPlayers = courtBooking.currentPlayers || [];
 
-    const playersToUnbook = enteredPlayers.filter((player) =>
-      currentPlayers.includes(player)
+    const playersToUnbook = enteredUsernames.filter((username) =>
+      currentUsernames.includes(username)
     );
 
     if (playersToUnbook.length > 0) {
-      courtBooking.currentPlayers = currentPlayers.filter(
-        (player) => !playersToUnbook.includes(player)
+      courtBooking.currentUsernames = currentUsernames.filter(
+        (username) => !playersToUnbook.includes(username)
       );
-      unbookedPlayers.push(...playersToUnbook);
 
-      if (courtBooking.currentPlayers.length === 0) {
+      courtBooking.currentPlayers = currentPlayers.filter(
+        (fullName, index) => !playersToUnbook.includes(currentUsernames[index])
+      );
+
+      unbookedUsernames.push(...playersToUnbook);
+
+      if (courtBooking.currentUsernames.length === 0) {
         courtBooking.timeLeft = 0;
 
         if (courtBooking.queue.length > 0) {
-          const nextQueue = courtBooking.queue.shift();
-          courtBooking.currentPlayers = nextQueue;
+          const nextQueuePlayers = courtBooking.queue.shift();
+          const nextQueueUsernames = courtBooking.queueUsernames.shift();
+
+          courtBooking.currentPlayers = nextQueuePlayers;
+          courtBooking.currentUsernames = nextQueueUsernames;
           courtBooking.timeLeft = 1800;
           startCountdown(courtName);
         }
@@ -650,7 +702,7 @@ async function unbookCourt() {
     }
   }
 
-  if (unbookedPlayers.length === 0) {
+  if (unbookedUsernames.length === 0) {
     Swal.fire({
       icon: "error",
       title: "No matching players found for unbooking.",
@@ -665,11 +717,10 @@ async function unbookCourt() {
   Swal.fire({
     icon: "success",
     title: "Court Unbooked Successfully",
-    text: `Players ${unbookedPlayers.join(
-      ", "
-    )} have been successfully unbooked from their court(s).`,
+    text: `Players ${unbookedUsernames.map((username) => users[username]).join(", ")} have been successfully unbooked from their court(s).`,
   });
 }
+
 
 function saveCourtData() {
   fetch("/update-courts", {
