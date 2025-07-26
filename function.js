@@ -770,12 +770,16 @@ function startCountdown(court) {
       renderCourts();
     } else {
       clearInterval(interval);
+
       courts[court].currentPlayers = [];
+      courts[court].currentUsernames = []; 
+
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
         courts[court].timeLeft = 1800;
         startCountdown(court);
       }
+
       renderCourts();
     }
   }, 1000);
