@@ -770,18 +770,21 @@ function startCountdown(court) {
       clearInterval(interval);
 
       courts[court].currentPlayers = [];
-      courts[court].currentUsernames = []; 
+      courts[court].currentUsernames = [];
 
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].timeLeft = 1800;
+        courts[court].currentUsernames = courts[court].queueUsernames.shift(); 
+        courts[court].timeLeft = 20;
         startCountdown(court);
       }
 
+      saveCourtData(); 
       renderCourts();
     }
   }, 1000);
 }
+
 
 function clearBookingFields() {
   for (let i = 1; i <= 4; i++) {
