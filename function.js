@@ -775,7 +775,7 @@ function startCountdown(court) {
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
         courts[court].currentUsernames = courts[court].queueUsernames.shift(); 
-        courts[court].timeLeft = 20;
+        courts[court].timeLeft = 1800;
         startCountdown(court);
       }
 
