@@ -72,10 +72,9 @@ function filterUsersByEmail() {
       a.email.localeCompare(b.email)
     );
   } else {
-matches = Object.entries(users)
-  .filter(([email]) => email.includes(search))
-  .map(([, user]) => user);
-
+    matches = Object.entries(users)
+      .filter(([email]) => email.includes(search))
+      .map(([, user]) => user);
   }
 
   matches.forEach((user) => {
@@ -108,7 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
   emailInput.addEventListener("input", filterUsersByEmail);
 });
 
-
 window.displaySignedInUserDetailsByEmail = function () {
   const selectedEmail = document.getElementById("signedInSelect").value;
   if (selectedEmail) {
@@ -123,14 +121,17 @@ function displayUserDetails(email) {
 
   window.selectedUserEmail = email.toLowerCase();
 
-  const formattedSignInDate = new Date(user.signInDate).toLocaleString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const formattedSignInDate = new Date(user.signInDate).toLocaleString(
+    "en-US",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }
+  );
 
   const userDetails = `
     <div id="userTextInfo">
@@ -170,7 +171,7 @@ function displayUserDetails(email) {
   const currentPic = document.getElementById("currentProfilePic");
 
   fetch(`/api/check-profile-pic/${email}`)
-    .then(res => res.json())
+    .then((res) => res.json())
     .then(({ exists }) => {
       currentPic.src = exists
         ? `/uploads/${email}.jpg?${Date.now()}`
@@ -182,74 +183,92 @@ function displayUserDetails(email) {
       currentPic.style.display = "block";
     });
 
-  document.getElementById("uploadPicBtn").addEventListener("click", async () => {
-    const fileInput = document.getElementById("profilePicInput");
-    const file = fileInput.files[0];
+  document
+    .getElementById("uploadPicBtn")
+    .addEventListener("click", async () => {
+      const fileInput = document.getElementById("profilePicInput");
+      const file = fileInput.files[0];
 
-    if (!file) {
-      Swal.fire("No File", "Please select a file to upload.", "warning");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("image", file);
-    formData.append("email", email);
-
-    try {
-      const res = await fetch("/api/upload-profile-pic", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await res.json();
-
-      if (result.success) {
-        await Swal.fire("Success", "Profile picture uploaded!", "success");
-        document.getElementById("currentProfilePic").src = `/uploads/${email}.jpg?${Date.now()}`;
-        location.reload();
-      } else {
-        Swal.fire("Upload Failed", result.message || "Upload failed.", "error");
+      if (!file) {
+        Swal.fire("No File", "Please select a file to upload.", "warning");
+        return;
       }
-    } catch (err) {
-      console.error("Error:", err);
-      Swal.fire("Error", "Something went wrong during upload.", "error");
-    }
-  });
 
-  document.getElementById("deletePicBtn").addEventListener("click", async () => {
-    const confirmation = await Swal.fire({
-      title: "Are you sure?",
-      text: "This will permanently delete the profile picture.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("email", email);
+
+      try {
+        const res = await fetch("/api/upload-profile-pic", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          await Swal.fire("Success", "Profile picture uploaded!", "success");
+          document.getElementById(
+            "currentProfilePic"
+          ).src = `/uploads/${email}.jpg?${Date.now()}`;
+          location.reload();
+        } else {
+          Swal.fire(
+            "Upload Failed",
+            result.message || "Upload failed.",
+            "error"
+          );
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        Swal.fire("Error", "Something went wrong during upload.", "error");
+      }
     });
 
-    if (!confirmation.isConfirmed) return;
-
-    try {
-      const res = await fetch("/api/delete-profile-pic", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
+  document
+    .getElementById("deletePicBtn")
+    .addEventListener("click", async () => {
+      const confirmation = await Swal.fire({
+        title: "Are you sure?",
+        text: "This will permanently delete the profile picture.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!",
       });
 
-      const result = await res.json();
+      if (!confirmation.isConfirmed) return;
 
-      if (result.success) {
-        Swal.fire("Deleted", "Profile picture deleted.", "success");
-        currentPic.src = "";
-        currentPic.style.display = "none";
-      } else {
-        Swal.fire("Delete Failed", result.message || "Could not delete picture.", "error");
+      try {
+        const res = await fetch("/api/delete-profile-pic", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          Swal.fire("Deleted", "Profile picture deleted.", "success");
+          currentPic.src = "";
+          currentPic.style.display = "none";
+        } else {
+          Swal.fire(
+            "Delete Failed",
+            result.message || "Could not delete picture.",
+            "error"
+          );
+        }
+      } catch (error) {
+        console.error("Error deleting profile picture:", error);
+        Swal.fire(
+          "Error",
+          "Something went wrong while deleting the picture.",
+          "error"
+        );
       }
-    } catch (error) {
-      console.error("Error deleting profile picture:", error);
-      Swal.fire("Error", "Something went wrong while deleting the picture.", "error");
-    }
-  });
+    });
 
   // Stats + dropdown
   const today = new Date();
@@ -281,7 +300,9 @@ function displayUserDetails(email) {
       <option value="">Select a User</option>`;
 
   signedInTodayUsers.forEach((u) => {
-    signedInDropdown += `<option value="${u.email.toLowerCase()}">${u.email}</option>`;
+    signedInDropdown += `<option value="${u.email.toLowerCase()}">${
+      u.email
+    }</option>`;
   });
 
   signedInDropdown += `</select>`;
@@ -290,7 +311,6 @@ function displayUserDetails(email) {
   document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
   document.getElementById("signedInDropdown").style.display = "block";
 }
-
 
 function displaySignedInUserDetailsByEmail() {
   const selectedEmail = document.getElementById("signedInSelect").value;
@@ -404,7 +424,11 @@ function editUser(username) {
           if (data.error) {
             Swal.fire("Error", data.error, "error");
           } else {
-            Swal.fire("Success", `User ${username} updated successfully!`, "success").then(() => {
+            Swal.fire(
+              "Success",
+              `User ${username} updated successfully!`,
+              "success"
+            ).then(() => {
               showUsers();
               location.reload();
             });
@@ -417,7 +441,6 @@ function editUser(username) {
     }
   });
 }
-
 
 function deleteUser(username) {
   Swal.fire({
@@ -452,7 +475,6 @@ function deleteUser(username) {
     }
   });
 }
-
 
 async function validateUser(username, password) {
   try {
@@ -511,8 +533,7 @@ async function bookCourt() {
   for (let i = 1; i <= 4; i++) {
     const username = document
       .getElementById(`bookingUsername${i}`)
-      .value
-      .trim()
+      .value.trim()
       .toLowerCase();
 
     const password = document.getElementById(`bookingPassword${i}`).value;
@@ -541,9 +562,9 @@ async function bookCourt() {
         Swal.fire({
           icon: "error",
           title: `User ${users[username]} is already in a court queue.`,
-  });
-  return;
-}
+        });
+        return;
+      }
 
       enteredUsernames.push(username);
       enteredFullNames.push(users[username]);
@@ -561,7 +582,6 @@ async function bookCourt() {
     return;
   }
 
-
   if (enteredUsernames.length !== 2 && enteredUsernames.length !== 4) {
     Swal.fire({
       icon: "error",
@@ -569,6 +589,25 @@ async function bookCourt() {
     });
     return;
   }
+
+  const alreadyOnThisCourt = enteredUsernames.some((username) =>
+    (courts[court].currentUsernames || []).includes(username)
+  );
+  if (alreadyOnThisCourt) {
+    Swal.fire({
+      icon: "error",
+      title: "One or more players are already on this court.",
+    });
+    return;
+  }
+
+  if (courts[court].isUnavailable) {
+  Swal.fire({
+    icon: "error",
+    title: "This court is currently unavailable.",
+  });
+  return;
+}
 
   const currentUsernames = courts[court].currentUsernames || [];
   const currentPlayers = courts[court].currentPlayers || [];
@@ -578,10 +617,7 @@ async function bookCourt() {
     courts[court].currentPlayers = enteredFullNames;
     courts[court].timeLeft = 1800;
     startCountdown(court);
-  } else if (
-    currentUsernames.length === 2 &&
-    enteredUsernames.length === 2
-  ) {
+  } else if (currentUsernames.length === 2 && enteredUsernames.length === 2) {
     const totalUsernames = [...currentUsernames, ...enteredUsernames];
     const totalFullNames = [...currentPlayers, ...enteredFullNames];
 
@@ -599,6 +635,20 @@ async function bookCourt() {
   } else {
     courts[court].queueUsernames = courts[court].queueUsernames || [];
     courts[court].queue = courts[court].queue || [];
+
+  const alreadyQueuedOnThisCourt = courts[court].queueUsernames.some(
+    (group) =>
+      group.length === enteredUsernames.length &&
+      group.every((u) => enteredUsernames.includes(u))
+  );
+
+  if (alreadyQueuedOnThisCourt) {
+    Swal.fire({
+      icon: "error",
+      title: "This group is already in the queue for this court.",
+    });
+    return;
+  }
 
     if (courts[court].queue.length < 3) {
       courts[court].queue.push(enteredFullNames);
@@ -637,13 +687,16 @@ async function unbookCourt() {
     return;
   }
 
-  const allBookedUsernames = Object.values(courts).flatMap(court => [
+  const allBookedUsernames = Object.values(courts).flatMap((court) => [
     ...(court.currentUsernames || []),
     ...(court.queueUsernames ? court.queueUsernames.flat() : []),
   ]);
 
   for (let i = 1; i <= 4; i++) {
-    const username = document.getElementById(`unbookingUsername${i}`).value.trim().toLowerCase();
+    const username = document
+      .getElementById(`unbookingUsername${i}`)
+      .value.trim()
+      .toLowerCase();
     const password = document.getElementById(`unbookingPassword${i}`).value;
 
     if (username && password) {
@@ -682,13 +735,24 @@ async function unbookCourt() {
 
   for (const courtName in courts) {
     const court = courts[courtName];
-    const { currentUsernames = [], currentPlayers = [], queue = [], queueUsernames = [] } = court;
+    const {
+      currentUsernames = [],
+      currentPlayers = [],
+      queue = [],
+      queueUsernames = [],
+    } = court;
 
-    const playersToUnbook = enteredUsernames.filter((username) => currentUsernames.includes(username));
+    const playersToUnbook = enteredUsernames.filter((username) =>
+      currentUsernames.includes(username)
+    );
 
     if (playersToUnbook.length > 0) {
-      court.currentUsernames = currentUsernames.filter(username => !playersToUnbook.includes(username));
-      court.currentPlayers = currentPlayers.filter((_, i) => !playersToUnbook.includes(currentUsernames[i]));
+      court.currentUsernames = currentUsernames.filter(
+        (username) => !playersToUnbook.includes(username)
+      );
+      court.currentPlayers = currentPlayers.filter(
+        (_, i) => !playersToUnbook.includes(currentUsernames[i])
+      );
       unbookedUsernames.push(...playersToUnbook);
 
       if (court.currentUsernames.length === 0 && court.queue.length > 0) {
@@ -703,11 +767,15 @@ async function unbookCourt() {
 
     for (let i = queueUsernames.length - 1; i >= 0; i--) {
       const usernames = queueUsernames[i];
-      const hasAnyToRemove = usernames.some(username => enteredUsernames.includes(username));
+      const hasAnyToRemove = usernames.some((username) =>
+        enteredUsernames.includes(username)
+      );
       if (hasAnyToRemove) {
         queueUsernames.splice(i, 1);
         queue.splice(i, 1);
-        unbookedUsernames.push(...usernames.filter(username => enteredUsernames.includes(username)));
+        unbookedUsernames.push(
+          ...usernames.filter((username) => enteredUsernames.includes(username))
+        );
       }
     }
   }
@@ -730,10 +798,11 @@ async function unbookCourt() {
   Swal.fire({
     icon: "success",
     title: "Players Unbooked Successfully",
-    text: `Players ${unbookedUsernames.map(username => users[username]).join(", ")} have been removed from their court(s) or queue.`,
+    text: `Players ${unbookedUsernames
+      .map((username) => users[username])
+      .join(", ")} have been removed from their court(s) or queue.`,
   });
 }
-
 
 async function saveCourtData(courtName) {
   try {
@@ -753,7 +822,6 @@ async function saveCourtData(courtName) {
     console.error("Error saving court data:", error);
   }
 }
-
 
 let currentVersion = null;
 
@@ -781,7 +849,6 @@ async function loadCourtData() {
     console.error("Error fetching court data:", err);
   }
 }
-
 
 function renderAndStart() {
   renderCourts();
@@ -817,7 +884,7 @@ function startCountdown(court) {
 
       if (courts[court].queue.length > 0) {
         courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].currentUsernames = courts[court].queueUsernames.shift(); 
+        courts[court].currentUsernames = courts[court].queueUsernames.shift();
         courts[court].timeLeft = 1800;
         startCountdown(court);
       }
@@ -827,7 +894,6 @@ function startCountdown(court) {
     }
   }, 1000);
 }
-
 
 function clearBookingFields() {
   for (let i = 1; i <= 4; i++) {
@@ -871,18 +937,24 @@ function renderCourts() {
     courtDisplay += `<p class="status">${statusText}</p>`;
 
     if (!isUnavailable && courtStatusClass === "closed") {
-      courtDisplay += `<p>Time Left: ${minutes}:${seconds.toString().padStart(2, "0")}</p>`;
+      courtDisplay += `<p>Time Left: ${minutes}:${seconds
+        .toString()
+        .padStart(2, "0")}</p>`;
     }
 
     if (!isUnavailable) {
       courtDisplay += `<p>Current Players: ${
-        details.currentPlayers.length ? details.currentPlayers.join(", ") : "None"
+        details.currentPlayers.length
+          ? details.currentPlayers.join(", ")
+          : "None"
       }</p>`;
     }
 
     if (isAdminPage && !isUnavailable) {
       details.currentPlayers.forEach((player, i) => {
-        courtDisplay += `<p>Player ${i + 1}: ${player} <button class="remove-btn" onclick="removePlayer('${court}', ${i})">Remove</button></p>`;
+        courtDisplay += `<p>Player ${
+          i + 1
+        }: ${player} <button class="remove-btn" onclick="removePlayer('${court}', ${i})">Remove</button></p>`;
       });
 
       for (let q = 0; q < 3; q++) {
@@ -901,7 +973,9 @@ function renderCourts() {
     } else if (!isUnavailable) {
       for (let i = 0; i < 3; i++) {
         courtDisplay += `<p>Queue ${i + 1}: ${
-          details.queue[i] && details.queue[i].length ? details.queue[i].join(", ") : "Empty"
+          details.queue[i] && details.queue[i].length
+            ? details.queue[i].join(", ")
+            : "Empty"
         }</p>`;
       }
     }
@@ -949,10 +1023,7 @@ function removeQueuedPlayer(courtName, queueIndex, playerIndex) {
   const court = courts[courtName];
   if (!court || !court.queue || !court.queueUsernames) return;
 
-  if (
-    court.queue[queueIndex] &&
-    court.queueUsernames[queueIndex]
-  ) {
+  if (court.queue[queueIndex] && court.queueUsernames[queueIndex]) {
     court.queue[queueIndex].splice(playerIndex, 1);
     court.queueUsernames[queueIndex].splice(playerIndex, 1);
 
@@ -965,8 +1036,6 @@ function removeQueuedPlayer(courtName, queueIndex, playerIndex) {
     renderCourts();
   }
 }
-
-
 
 // async function removePlayer(courtName, playerIndex) {
 //   const court = courts[courtName];

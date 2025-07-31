@@ -710,7 +710,6 @@ app.post("/update-courts", async (req, res) => {
 
   if (changes.length > 0) {
     version++;
-    console.log(`Courts updated: ${changes.join(", ")} | New version: ${version}`);
   }
 
   res.status(200).json({
