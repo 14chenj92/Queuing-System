@@ -84,9 +84,9 @@
 </div>
 </div>
   <script src="function.js"></script>
-  <script>
+  <!-- <script>
     renderCourts();
-  </script>
+  </script> -->
     <script>
   window.addEventListener("storage", function (event) {
     if (event.key === "courtsData") {
@@ -95,25 +95,12 @@
   });
   </script>
   <script src="script.js"></script>
-  <script>
-    window.onload = function () {
-  loadCourtData();
-  setInterval(loadCourtData, 5000); 
-};
-</script>
 <script>
-  let courtsData = {};
-
-window.addEventListener("DOMContentLoaded", () => {
-  fetch("/api/court-status")
-    .then(res => res.json())
-    .then(data => {
-      courtsData = data;
-      renderCourts();
-    });
-    bc.postMessage({ type: 'court-status-changed' });
-});
-  </script>
+  window.addEventListener("DOMContentLoaded", () => {
+    loadCourtData(); 
+    setInterval(loadCourtData, 5000); 
+  });
+</script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
   <script>
 let lastStatus = null;

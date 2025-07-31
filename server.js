@@ -153,12 +153,15 @@ CREATE TABLE IF NOT EXISTS users (
 `;
 
 const createCourtsTable = `
-CREATE TABLE IF NOT EXISTS court_players (
-    player_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    court_id INT,  -- Could be any identifier for the court
-    booking_time DATETIME,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+CREATE TABLE IF NOT EXISTS courts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL,
+  time_left INT DEFAULT 1800,
+  current_players JSON DEFAULT NULL,
+  current_usernames JSON DEFAULT NULL,
+  queue JSON DEFAULT NULL,
+  queue_usernames JSON DEFAULT NULL,
+  available ENUM('available', 'unavailable') DEFAULT 'available'
 );
 `;
 
@@ -185,6 +188,8 @@ db.query(createAdminsTable, (err) => {
   if (err) throw err;
   console.log("Admins table created");
 });
+
+
 
 function generateRandomPassword(callback) {
   const words = wordList;
@@ -548,6 +553,38 @@ app.delete("/users/:username", (req, res) => {
   });
 });
 
+
+
+
+
+const initialCourts = [
+  "Paris",
+  "London",
+  "Berlin",
+  "Tokyo",
+  "New Delhi",
+  "Jakarta",
+  "Beijing",
+  "Toronto",
+  "New York",
+  "Rest Area",
+];
+
+function seedCourtsTable() {
+  initialCourts.forEach(async (courtName) => {
+    try {
+      await db.promise().query(
+        `INSERT IGNORE INTO courts (name, time_left) VALUES (?, 1800)`,
+        [courtName]
+      );
+    } catch (err) {
+      console.error(`Failed to insert ${courtName}:`, err);
+    }
+  });
+
+  console.log("✅ Court seeding completed.");
+}
+
 let courts = {
   Paris: { timeLeft: 1800, currentPlayers: [], queue: [] },
   London: { timeLeft: 1800, currentPlayers: [], queue: [] },
@@ -574,17 +611,40 @@ let courtsData = {
 };
 
 app.get("/api/court-status", (req, res) => {
-  res.json(courtsData);
+  db.query("SELECT name, available FROM courts", (err, rows) => {
+    if (err) {
+      console.error("Failed to fetch court status:", err);
+      return res.status(500).json({ error: "Failed to fetch court status" });
+    }
+
+    const statusMap = {};
+    rows.forEach((row) => {
+      statusMap[row.name] = row.available;
+    });
+
+    res.json(statusMap);
+  });
 });
+
 
 app.post("/api/court-status", (req, res) => {
   const { court, status } = req.body;
-  if (!court || !status || !courtsData.hasOwnProperty(court)) {
+  if (!court || !["available", "unavailable"].includes(status)) {
     return res.status(400).json({ error: "Invalid court or status" });
   }
-  courtsData[court] = status;
-  res.json({ court, status });
+
+  db.query("UPDATE courts SET available = ? WHERE name = ?", [status, court], (err, results) => {
+    if (err) {
+      console.error("Failed to update court status:", err);
+      return res.status(500).json({ error: "Failed to update court status" });
+    }
+
+    res.json({ court, status });
+  });
 });
+
+
+
 
 let version = 0;
 
@@ -608,92 +668,106 @@ app.get("/courts", (req, res) => {
   res.json({ courts, version });
 });
 
-app.post("/update-courts", (req, res) => {
-  courts = req.body;
-  version++; 
-  console.log("Courts updated. New version:", version);
-  res.sendStatus(200);
-});
+app.post("/update-courts", async (req, res) => {
+  const { updatedCourts, version: clientVersion } = req.body;
 
-app.post("/unbook-court", async (req, res) => {
-  const { courtId, playersToRemove } = req.body;
-
-  if (
-    !courtId ||
-    !Array.isArray(playersToRemove) ||
-    playersToRemove.length === 0
-  ) {
-    return res.status(400).send("Court ID and players to remove are required.");
+  if (!updatedCourts || typeof updatedCourts !== "object") {
+    return res.status(400).json({ error: "Invalid court update payload." });
   }
 
-  try {
-    const court = courts[courtId];
-    if (!court) {
-      return res.status(404).send("Court not found.");
-    }
-
-    let removedPlayers = [];
-
-    for (const player of playersToRemove) {
-      const playerIndex = court.currentPlayers.indexOf(player);
-      if (playerIndex !== -1) {
-        court.currentPlayers.splice(playerIndex, 1);
-        removedPlayers.push(player);
-      } else {
-        console.log(`Player ${player} is not booked on this court.`);
-      }
-    }
-
-    if (removedPlayers.length === 0) {
-      return res.status(400).send("No players were removed.");
-    }
-
-    const removeQuery =
-      "DELETE FROM court_players WHERE user_id IN (?) AND court_id = ?";
-    const [result] = await db
-      .promise()
-      .query(removeQuery, [playersToRemove, courtId]);
-
-    if (result.affectedRows === 0) {
-      return res
-        .status(500)
-        .send("Failed to remove players from the database.");
-    }
-
-    res.status(200).json({
-      message: "Players removed successfully",
-      removedPlayers,
-      courtState: court,
+  if (clientVersion !== version) {
+    return res.status(409).json({
+      error: "Version mismatch. Please reload data.",
+      serverVersion: version,
     });
-  } catch (error) {
-    console.error("Error unbooking players:", error);
-    res.status(500).send("Error unbooking players.");
   }
+
+  let changes = [];
+
+  for (const [courtName, incomingData] of Object.entries(updatedCourts)) {
+    if (!courts[courtName]) continue;
+
+    courts[courtName] = {
+      ...courts[courtName],
+      ...incomingData,
+    };
+
+    await db.promise().query(
+      `UPDATE courts SET time_left = ?, current_players = ?, current_usernames = ?, queue = ?, queue_usernames = ?
+       WHERE name = ?`,
+      [
+        courts[courtName].timeLeft,
+        JSON.stringify(courts[courtName].currentPlayers || []),
+        JSON.stringify(courts[courtName].currentUsernames || []),
+        JSON.stringify(courts[courtName].queue || []),
+        JSON.stringify(courts[courtName].queueUsernames || []),
+        courtName,
+      ]
+    );
+
+    changes.push(courtName);
+  }
+
+  if (changes.length > 0) {
+    version++;
+    console.log(`Courts updated: ${changes.join(", ")} | New version: ${version}`);
+  }
+
+  res.status(200).json({
+    message: "Courts updated successfully.",
+    updated: changes,
+    version,
+  });
 });
 
-// Remove player from a court
-app.delete("/remove-player/:playerId", async (req, res) => {
-  const playerId = req.params.playerId;
 
+
+
+
+
+function safeParse(json) {
   try {
-    const [result] = await db
-      .promise()
-      .query("SELECT * FROM court_players WHERE player_id = ?", [playerId]);
-
-    if (result.length === 0) {
-      return res.status(404).send("Player not found.");
-    }
-
-    await db
-      .promise()
-      .query("DELETE FROM court_players WHERE player_id = ?", [playerId]);
-
-    res.status(200).send("Player removed successfully!");
-  } catch (error) {
-    console.error("Error removing player:", error);
-    res.status(500).send("Error removing player.");
+    if (!json || json.trim() === "") return [];
+    return JSON.parse(json);
+  } catch (e) {
+    console.warn("Invalid JSON detected:", json);
+    return [];
   }
-});
+}
+
+async function loadCourtsFromDB() {
+  const [rows] = await db.promise().query("SELECT * FROM courts");
+
+  courts = {}; // Reset
+
+  for (const row of rows) {
+    courts[row.name] = {
+      timeLeft: row.time_left || 0,
+      currentPlayers: safeParse(row.current_players),
+      currentUsernames: safeParse(row.current_usernames),
+      queue: safeParse(row.queue),
+      queueUsernames: safeParse(row.queue_usernames),
+    };
+  }
+
+  console.log("✅ Courts loaded from database");
+}
+
+
+setTimeout(() => {
+  seedCourtsTable();
+}, 3000);
+
+
+
+
+
+
+
+
+
+
+
 
 let pendingLogins = [];
 let approvedLogins = [];

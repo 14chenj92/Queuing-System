@@ -541,14 +541,26 @@ async function bookCourt() {
         Swal.fire({
           icon: "error",
           title: `User ${users[username]} is already in a court queue.`,
-        });
-        return;
-      }
+  });
+  return;
+}
 
       enteredUsernames.push(username);
       enteredFullNames.push(users[username]);
     }
   }
+
+  const duplicates = enteredUsernames.filter(
+    (u, i, arr) => u && arr.indexOf(u) !== i
+  );
+  if (duplicates.length > 0) {
+    Swal.fire({
+      icon: "error",
+      title: `Duplicate player(s) in submission: ${duplicates.join(", ")}`,
+    });
+    return;
+  }
+
 
   if (enteredUsernames.length !== 2 && enteredUsernames.length !== 4) {
     Swal.fire({
@@ -600,7 +612,7 @@ async function bookCourt() {
     }
   }
 
-  saveCourtData();
+  await saveCourtData(court);
   clearBookingFields();
   renderCourts();
 }
@@ -708,7 +720,10 @@ async function unbookCourt() {
     return;
   }
 
-  saveCourtData(); 
+  for (const courtName of Object.keys(courts)) {
+    await saveCourtData(courtName);
+  }
+
   clearBookingFields();
   renderCourts();
 
@@ -720,30 +735,53 @@ async function unbookCourt() {
 }
 
 
-function saveCourtData() {
-  fetch("/update-courts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(courts),
-  });
+async function saveCourtData(courtName) {
+  try {
+    const response = await fetch("/update-courts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        updatedCourts: { [courtName]: courts[courtName] },
+        version: currentVersion,
+      }),
+    });
+    const data = await response.json();
+    if (data && data.version !== undefined) {
+      currentVersion = data.version;
+    }
+  } catch (error) {
+    console.error("Error saving court data:", error);
+  }
 }
+
 
 let currentVersion = null;
 
-function loadCourtData() {
-  fetch("/courts")
-    .then((response) => response.json())
-    .then((data) => {
-      if (currentVersion === null) {
-        currentVersion = data.version;
-        courts = data.courts;
-        renderAndStart();
-      } else if (data.version !== currentVersion) {
-        location.reload();
+async function loadCourtData() {
+  try {
+    const courtRes = await fetch("/courts");
+    const courtData = await courtRes.json();
+
+    const statusRes = await fetch("/api/court-status");
+    const statusData = await statusRes.json();
+
+    if (currentVersion === null) {
+      currentVersion = courtData.version;
+      courts = courtData.courts;
+
+      for (const court in courts) {
+        courts[court].isUnavailable = statusData[court] === "unavailable";
       }
-    })
-    .catch((err) => console.error("Error fetching courts:", err));
+
+      renderAndStart();
+    } else if (courtData.version !== currentVersion) {
+      location.reload();
+    }
+  } catch (err) {
+    console.error("Error fetching court data:", err);
+  }
 }
+
 
 function renderAndStart() {
   renderCourts();
@@ -761,13 +799,18 @@ window.onload = function () {
   loadCourtData();
 };
 
+const courtTimers = {};
+
 function startCountdown(court) {
-  let interval = setInterval(() => {
+  if (courtTimers[court]) clearInterval(courtTimers[court]);
+
+  courtTimers[court] = setInterval(() => {
     if (courts[court].timeLeft > 0) {
       courts[court].timeLeft--;
       renderCourts();
     } else {
-      clearInterval(interval);
+      clearInterval(courtTimers[court]);
+      delete courtTimers[court];
 
       courts[court].currentPlayers = [];
       courts[court].currentUsernames = [];
@@ -779,7 +822,7 @@ function startCountdown(court) {
         startCountdown(court);
       }
 
-      saveCourtData(); 
+      saveCourtData(court);
       renderCourts();
     }
   }, 1000);
@@ -804,9 +847,7 @@ function renderCourts() {
   const courtEntries = Object.entries(courts);
 
   courtEntries.forEach(([court, details], index) => {
-    let isUnavailable =
-      (typeof courtsData !== "undefined" && courtsData[court] === "unavailable") ||
-      court === "Rest Area";
+    let isUnavailable = details.isUnavailable || court === "Rest Area";
     let minutes = Math.floor(details.timeLeft / 60);
     let seconds = details.timeLeft % 60;
 
@@ -887,37 +928,44 @@ function removePlayer(courtName, playerIndex) {
   const court = courts[courtName];
   if (!court || !court.currentPlayers) return;
 
-
   court.currentPlayers.splice(playerIndex, 1);
+  court.currentUsernames.splice(playerIndex, 1);
 
-  saveCourtData().then(() => {
-    loadCourtData();         // Reload from server to sync version
-    clearBookingFields();    // Optional: clears input fields if used
-    renderCourts();          // Re-render courts to reflect changes
-  });
+  if (court.currentPlayers.length === 0) {
+    court.timeLeft = 0;
+    if (court.queue && court.queue.length > 0) {
+      court.currentPlayers = court.queue.shift();
+      court.currentUsernames = court.queueUsernames.shift();
+      court.timeLeft = 1800;
+      startCountdown(courtName);
+    }
+  }
+
+  saveCourtData(courtName);
+  renderCourts();
 }
-
-
 
 function removeQueuedPlayer(courtName, queueIndex, playerIndex) {
   const court = courts[courtName];
   if (!court || !court.queue || !court.queueUsernames) return;
 
-  court.queue[queueIndex].splice(playerIndex, 1);
-  court.queueUsernames[queueIndex].splice(playerIndex, 1);
+  if (
+    court.queue[queueIndex] &&
+    court.queueUsernames[queueIndex]
+  ) {
+    court.queue[queueIndex].splice(playerIndex, 1);
+    court.queueUsernames[queueIndex].splice(playerIndex, 1);
 
-  if (court.queue[queueIndex].length === 0) {
-    court.queue.splice(queueIndex, 1);
-    court.queueUsernames.splice(queueIndex, 1);
+    if (court.queue[queueIndex].length === 0) {
+      court.queue.splice(queueIndex, 1);
+      court.queueUsernames.splice(queueIndex, 1);
+    }
+
+    saveCourtData(courtName);
+    renderCourts();
   }
-
-saveCourtData().then(() => {
-  loadCourtData();
-  clearBookingFields();
-  renderCourts();
-});
-
 }
+
 
 
 // async function removePlayer(courtName, playerIndex) {
