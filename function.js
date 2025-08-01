@@ -602,12 +602,12 @@ async function bookCourt() {
   }
 
   if (courts[court].isUnavailable) {
-  Swal.fire({
-    icon: "error",
-    title: "This court is currently unavailable.",
-  });
-  return;
-}
+    Swal.fire({
+      icon: "error",
+      title: "This court is currently unavailable.",
+    });
+    return;
+  }
 
   const currentUsernames = courts[court].currentUsernames || [];
   const currentPlayers = courts[court].currentPlayers || [];
@@ -636,19 +636,20 @@ async function bookCourt() {
     courts[court].queueUsernames = courts[court].queueUsernames || [];
     courts[court].queue = courts[court].queue || [];
 
-  const alreadyQueuedOnThisCourt = courts[court].queueUsernames.some(
-    (group) =>
-      group.length === enteredUsernames.length &&
-      group.every((u) => enteredUsernames.includes(u))
-  );
+    console.log("Court Queue Usernames:", courts[court].queueUsernames);
+    const alreadyQueuedOnThisCourt = courts[court].queueUsernames.some(
+      (group) =>
+        group.length === enteredUsernames.length &&
+        group.every((u) => enteredUsernames.includes(u))
+    );
 
-  if (alreadyQueuedOnThisCourt) {
-    Swal.fire({
-      icon: "error",
-      title: "This group is already in the queue for this court.",
-    });
-    return;
-  }
+    if (alreadyQueuedOnThisCourt) {
+      Swal.fire({
+        icon: "error",
+        title: "This group is already in the queue for this court.",
+      });
+      return;
+    }
 
     if (courts[court].queue.length < 3) {
       courts[court].queue.push(enteredFullNames);
@@ -661,6 +662,32 @@ async function bookCourt() {
       return;
     }
   }
+
+  function logCourtStates() {
+    for (const courtName in courts) {
+      const court = courts[courtName];
+
+      console.log(`\n=== ${courtName} ===`);
+
+      // Current players
+      if (court.currentPlayers && court.currentPlayers.length > 0) {
+        console.log("Current Players:", court.currentPlayers.join(", "));
+      } else {
+        console.log("Current Players: None");
+      }
+
+      // Queue players
+      if (court.queue && court.queue.length > 0) {
+        court.queue.forEach((group, i) => {
+          console.log(`Queue ${i + 1}:`, group.join(", "));
+        });
+      } else {
+        console.log("Queue: Empty");
+      }
+    }
+  }
+
+  logCourtStates();
 
   await saveCourtData(court);
   clearBookingFields();
@@ -886,6 +913,15 @@ function startCountdown(court) {
         courts[court].currentPlayers = courts[court].queue.shift();
         courts[court].currentUsernames = courts[court].queueUsernames.shift();
         courts[court].timeLeft = 1800;
+
+        const nextUsernames = courts[court].currentUsernames;
+        for (let i = courts[court].queueUsernames.length - 1; i >= 0; i--) {
+          if (usernamesMatch(courts[court].queueUsernames[i], nextUsernames)) {
+            courts[court].queue.splice(i, 1);
+            courts[court].queueUsernames.splice(i, 1);
+          }
+        }
+
         startCountdown(court);
       }
 
@@ -894,6 +930,7 @@ function startCountdown(court) {
     }
   }, 1000);
 }
+
 
 function clearBookingFields() {
   for (let i = 1; i <= 4; i++) {
