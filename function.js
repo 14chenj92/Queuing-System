@@ -895,6 +895,15 @@ window.onload = function () {
 
 const courtTimers = {};
 
+function usernamesMatch(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+
+  const normalize = (arr) => arr.map(u => u.toLowerCase()).sort();
+  return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
+}
+
+
 function startCountdown(court) {
   if (courtTimers[court]) clearInterval(courtTimers[court]);
 
