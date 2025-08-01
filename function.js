@@ -636,7 +636,7 @@ async function bookCourt() {
     courts[court].queueUsernames = courts[court].queueUsernames || [];
     courts[court].queue = courts[court].queue || [];
 
-    console.log("Court Queue Usernames:", courts[court].queueUsernames);
+    // console.log("Court Queue Usernames:", courts[court].queueUsernames);
     const alreadyQueuedOnThisCourt = courts[court].queueUsernames.some(
       (group) =>
         group.length === enteredUsernames.length &&
@@ -663,31 +663,31 @@ async function bookCourt() {
     }
   }
 
-  function logCourtStates() {
-    for (const courtName in courts) {
-      const court = courts[courtName];
+  // function logCourtStates() {
+  //   for (const courtName in courts) {
+  //     const court = courts[courtName];
 
-      console.log(`\n=== ${courtName} ===`);
+  //     console.log(`\n=== ${courtName} ===`);
 
-      // Current players
-      if (court.currentPlayers && court.currentPlayers.length > 0) {
-        console.log("Current Players:", court.currentPlayers.join(", "));
-      } else {
-        console.log("Current Players: None");
-      }
+  //     // Current players
+  //     if (court.currentPlayers && court.currentPlayers.length > 0) {
+  //       console.log("Current Players:", court.currentPlayers.join(", "));
+  //     } else {
+  //       console.log("Current Players: None");
+  //     }
 
-      // Queue players
-      if (court.queue && court.queue.length > 0) {
-        court.queue.forEach((group, i) => {
-          console.log(`Queue ${i + 1}:`, group.join(", "));
-        });
-      } else {
-        console.log("Queue: Empty");
-      }
-    }
-  }
+  //     // Queue players
+  //     if (court.queue && court.queue.length > 0) {
+  //       court.queue.forEach((group, i) => {
+  //         console.log(`Queue ${i + 1}:`, group.join(", "));
+  //       });
+  //     } else {
+  //       console.log("Queue: Empty");
+  //     }
+  //   }
+  // }
 
-  logCourtStates();
+  // logCourtStates();
 
   await saveCourtData(court);
   clearBookingFields();
