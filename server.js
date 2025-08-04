@@ -179,11 +179,6 @@ db.query(createUsersTable, (err) => {
   console.log("Users table created");
 });
 
-db.query(createCourtsTable, (err) => {
-  if (err) throw err;
-  console.log("Court table created");
-});
-
 db.query(createAdminsTable, (err) => {
   if (err) throw err;
   console.log("Admins table created");
