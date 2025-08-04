@@ -25,37 +25,36 @@ db.query("SELECT 1", (err) => {
     console.error("DB connection failed:", err);
   } else {
     console.log("DB connected.");
-    
-    if (process.env.NODE_ENV === "development") {
-      db.query("DROP TABLE IF EXISTS courts", (err) => {
-        if (err) {
-          console.error("Failed to drop 'courts' table:", err);
-        } else {
-          console.log("✅ Dropped 'courts' table.");
 
-          const createCourtsTable = `
-            CREATE TABLE IF NOT EXISTS courts (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              name VARCHAR(50) UNIQUE NOT NULL,
-              time_left BIGINT DEFAULT 0,
-              current_players JSON DEFAULT NULL,
-              current_usernames JSON DEFAULT NULL,
-              queue JSON DEFAULT NULL,
-              queue_usernames JSON DEFAULT NULL,
-              available ENUM('available', 'unavailable') DEFAULT 'available'
-            );
-          `;
+    // Always drop and recreate the 'courts' table
+    db.query("DROP TABLE IF EXISTS courts", (err) => {
+      if (err) {
+        console.error("Failed to drop 'courts' table:", err);
+      } else {
+        console.log("✅ Dropped 'courts' table.");
 
-          db.query(createCourtsTable, (err) => {
-            if (err) {
-              console.error("❌ Failed to create 'courts' table:", err);
-            } else {
-              console.log("✅ Created 'courts' table.");
-            }
-          });
-        }
-      });
-    }
+        const createCourtsTable = `
+          CREATE TABLE IF NOT EXISTS courts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(50) UNIQUE NOT NULL,
+            time_left BIGINT DEFAULT 0,
+            current_players JSON DEFAULT NULL,
+            current_usernames JSON DEFAULT NULL,
+            queue JSON DEFAULT NULL,
+            queue_usernames JSON DEFAULT NULL,
+            available ENUM('available', 'unavailable') DEFAULT 'available'
+          );
+        `;
+
+        db.query(createCourtsTable, (err) => {
+          if (err) {
+            console.error("❌ Failed to create 'courts' table:", err);
+          } else {
+            console.log("✅ Created 'courts' table.");
+          }
+        });
+      }
+    });
   }
 });
 
