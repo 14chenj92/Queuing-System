@@ -615,17 +615,19 @@ async function bookCourt() {
   if (currentUsernames.length === 0) {
     courts[court].currentUsernames = enteredUsernames;
     courts[court].currentPlayers = enteredFullNames;
-    courts[court].timeLeft = 1800;
+    courts[court].timeLeft = Date.now() + 1800 * 1000;
+
     startCountdown(court);
-  } else if (currentUsernames.length === 2 && enteredUsernames.length === 2) {
+  } else if (currentUsernames.length + enteredUsernames.length <= 4) {
     const totalUsernames = [...currentUsernames, ...enteredUsernames];
     const totalFullNames = [...currentPlayers, ...enteredFullNames];
 
     const uniqueUsernames = new Set(totalUsernames);
+
     if (uniqueUsernames.size < totalUsernames.length) {
       Swal.fire({
         icon: "error",
-        title: "A player is already on this court.",
+        title: "Duplicate usernames are not allowed in the same court.",
       });
       return;
     }
@@ -638,9 +640,7 @@ async function bookCourt() {
 
     // console.log("Court Queue Usernames:", courts[court].queueUsernames);
     const alreadyQueuedOnThisCourt = courts[court].queueUsernames.some(
-      (group) =>
-        group.length === enteredUsernames.length &&
-        group.every((u) => enteredUsernames.includes(u))
+      (group) => usernamesMatch(group, enteredUsernames)
     );
 
     if (alreadyQueuedOnThisCourt) {
@@ -787,7 +787,7 @@ async function unbookCourt() {
         const nextQueueUsernames = court.queueUsernames.shift();
         court.currentPlayers = nextQueuePlayers;
         court.currentUsernames = nextQueueUsernames;
-        court.timeLeft = 1800;
+        court.timeLeft = Date.now() + 1800 * 1000; 
         startCountdown(courtName);
       }
     }
@@ -864,8 +864,28 @@ async function loadCourtData() {
       currentVersion = courtData.version;
       courts = courtData.courts;
 
-      for (const court in courts) {
-        courts[court].isUnavailable = statusData[court] === "unavailable";
+      for (const courtName in courts) {
+        const court = courts[courtName];
+        court.isUnavailable = statusData[courtName] === "unavailable";
+
+        const now = Date.now();
+
+        if (
+          court.currentPlayers.length > 0 &&
+          court.timeLeft &&
+          now >= court.timeLeft &&
+          Array.isArray(court.queue) &&
+          court.queue.length > 0
+        ) {
+          const nextQueuePlayers = court.queue.shift();
+          const nextQueueUsernames = court.queueUsernames.shift();
+
+          court.currentPlayers = nextQueuePlayers;
+          court.currentUsernames = nextQueueUsernames;
+          court.timeLeft = now + 1800 * 1000;
+
+          await saveCourtData(courtName);
+        }
       }
 
       renderAndStart();
@@ -879,10 +899,14 @@ async function loadCourtData() {
 
 function renderAndStart() {
   renderCourts();
+  const now = Date.now();
+
   Object.keys(courts).forEach((court) => {
+    const courtData = courts[court];
     if (
-      courts[court].currentPlayers.length > 0 &&
-      courts[court].timeLeft >= 0
+      courtData.currentPlayers.length > 0 &&
+      courtData.timeLeft &&
+      courtData.timeLeft > now
     ) {
       startCountdown(court);
     }
@@ -895,46 +919,50 @@ window.onload = function () {
 
 const courtTimers = {};
 
-function usernamesMatch(a, b) {
-  if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  if (a.length !== b.length) return false;
+function usernamesMatch(group1, group2) {
+  if (!Array.isArray(group1) || !Array.isArray(group2)) return false;
+  if (group1.length !== group2.length) return false;
 
-  const normalize = (arr) => arr.map(u => u.toLowerCase()).sort();
-  return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
+  const sorted1 = [...group1].sort();
+  const sorted2 = [...group2].sort();
+  return sorted1.every((u, i) => u === sorted2[i]);
 }
 
+function startCountdown(courtName) {
+  if (courtTimers[courtName]) clearInterval(courtTimers[courtName]);
 
-function startCountdown(court) {
-  if (courtTimers[court]) clearInterval(courtTimers[court]);
+  courtTimers[courtName] = setInterval(() => {
+    const court = courts[courtName];
+    if (!court || !court.timeLeft) return;
 
-  courtTimers[court] = setInterval(() => {
-    if (courts[court].timeLeft > 0) {
-      courts[court].timeLeft--;
+    const now = Date.now();
+    const remainingTime = Math.max(0, Math.floor((court.timeLeft - now) / 1000));
+
+    if (remainingTime > 0) {
       renderCourts();
     } else {
-      clearInterval(courtTimers[court]);
-      delete courtTimers[court];
+      clearInterval(courtTimers[courtName]);
+      delete courtTimers[courtName];
 
-      courts[court].currentPlayers = [];
-      courts[court].currentUsernames = [];
+      court.currentPlayers = [];
+      court.currentUsernames = [];
 
-      if (courts[court].queue.length > 0) {
-        courts[court].currentPlayers = courts[court].queue.shift();
-        courts[court].currentUsernames = courts[court].queueUsernames.shift();
-        courts[court].timeLeft = 1800;
+      if (
+        court.queue &&
+        court.queue.length > 0 &&
+        court.queueUsernames &&
+        court.queueUsernames.length > 0
+      ) {
+        court.currentPlayers = court.queue.shift();
+        court.currentUsernames = court.queueUsernames.shift();
+        court.timeLeft = Date.now() + 1800 * 1000;
 
-        const nextUsernames = courts[court].currentUsernames;
-        for (let i = courts[court].queueUsernames.length - 1; i >= 0; i--) {
-          if (usernamesMatch(courts[court].queueUsernames[i], nextUsernames)) {
-            courts[court].queue.splice(i, 1);
-            courts[court].queueUsernames.splice(i, 1);
-          }
-        }
-
-        startCountdown(court);
+        startCountdown(courtName);
+      } else {
+        court.timeLeft = null;
       }
 
-      saveCourtData(court);
+      saveCourtData(courtName);
       renderCourts();
     }
   }, 1000);
@@ -960,8 +988,12 @@ function renderCourts() {
 
   courtEntries.forEach(([court, details], index) => {
     let isUnavailable = details.isUnavailable || court === "Rest Area";
-    let minutes = Math.floor(details.timeLeft / 60);
-    let seconds = details.timeLeft % 60;
+    let timeRemaining = Math.max(
+      0,
+      Math.floor((details.timeLeft - Date.now()) / 1000)
+    );
+    let minutes = Math.floor(timeRemaining / 60);
+    let seconds = timeRemaining % 60;
 
     let courtStatusClass = isUnavailable
       ? "unavailable"
@@ -1004,7 +1036,11 @@ function renderCourts() {
       });
 
       for (let q = 0; q < 3; q++) {
-        const queueGroup = details.queue[q] || [];
+        const queueGroup =
+          Array.isArray(details.queueUsernames) &&
+          Array.isArray(details.queueUsernames[q])
+            ? details.queueUsernames[q]
+            : [];
         courtDisplay += `<p>Queue ${q + 1}: `;
         if (queueGroup.length > 0) {
           queueGroup.forEach((player, i) => {
@@ -1018,10 +1054,9 @@ function renderCourts() {
       }
     } else if (!isUnavailable) {
       for (let i = 0; i < 3; i++) {
+        const group = Array.isArray(details.queue) ? details.queue[i] : [];
         courtDisplay += `<p>Queue ${i + 1}: ${
-          details.queue[i] && details.queue[i].length
-            ? details.queue[i].join(", ")
-            : "Empty"
+          group && group.length ? group.join(", ") : "Empty"
         }</p>`;
       }
     }
@@ -1046,18 +1081,32 @@ function renderCourts() {
 
 function removePlayer(courtName, playerIndex) {
   const court = courts[courtName];
-  if (!court || !court.currentPlayers) return;
+  if (!court || !court.currentPlayers || !court.currentUsernames) return;
 
   court.currentPlayers.splice(playerIndex, 1);
   court.currentUsernames.splice(playerIndex, 1);
 
   if (court.currentPlayers.length === 0) {
-    court.timeLeft = 0;
-    if (court.queue && court.queue.length > 0) {
-      court.currentPlayers = court.queue.shift();
-      court.currentUsernames = court.queueUsernames.shift();
-      court.timeLeft = 1800;
-      startCountdown(courtName);
+    court.timeLeft = Date.now(); 
+
+    if (Array.isArray(court.queue) && court.queue.length > 0) {
+      const nextPlayers = court.queue.shift();
+      const nextUsernames = court.queueUsernames.shift();
+
+      if (Array.isArray(nextPlayers) && Array.isArray(nextUsernames)) {
+        court.currentPlayers = nextPlayers;
+        court.currentUsernames = nextUsernames;
+        court.timeLeft = Date.now() + 1800 * 1000; 
+
+        for (let i = court.queueUsernames.length - 1; i >= 0; i--) {
+          if (usernamesMatch(court.queueUsernames[i], nextUsernames)) {
+            court.queue.splice(i, 1);
+            court.queueUsernames.splice(i, 1);
+          }
+        }
+
+        startCountdown(courtName);
+      }
     }
   }
 
@@ -1067,9 +1116,18 @@ function removePlayer(courtName, playerIndex) {
 
 function removeQueuedPlayer(courtName, queueIndex, playerIndex) {
   const court = courts[courtName];
-  if (!court || !court.queue || !court.queueUsernames) return;
+  if (
+    !court ||
+    !Array.isArray(court.queue) ||
+    !Array.isArray(court.queueUsernames)
+  )
+    return;
 
-  if (court.queue[queueIndex] && court.queueUsernames[queueIndex]) {
+  if (
+    court.queue[queueIndex] &&
+    court.queueUsernames[queueIndex] &&
+    court.queue[queueIndex][playerIndex] !== undefined
+  ) {
     court.queue[queueIndex].splice(playerIndex, 1);
     court.queueUsernames[queueIndex].splice(playerIndex, 1);
 

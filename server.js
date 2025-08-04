@@ -156,7 +156,7 @@ const createCourtsTable = `
 CREATE TABLE IF NOT EXISTS courts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(50) UNIQUE NOT NULL,
-  time_left INT DEFAULT 1800,
+  time_left BIGINT DEFAULT 0,
   current_players JSON DEFAULT NULL,
   current_usernames JSON DEFAULT NULL,
   queue JSON DEFAULT NULL,

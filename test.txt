@@ -1,0 +1,1 @@
+courts["Paris"].timeLeft = Date.now() + 10 * 1000;
