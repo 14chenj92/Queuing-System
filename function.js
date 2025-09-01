@@ -890,8 +890,16 @@ async function loadCourtData() {
 
       renderAndStart();
     } else if (courtData.version !== currentVersion) {
-      location.reload();
-    }
+  currentVersion = courtData.version;
+  courts = courtData.courts;
+
+  for (const courtName in courts) {
+    const court = courts[courtName];
+    court.isUnavailable = statusData[courtName] === "unavailable";
+  }
+
+  renderAndStart();
+}
   } catch (err) {
     console.error("Error fetching court data:", err);
   }
@@ -976,6 +984,7 @@ function clearBookingFields() {
     document.getElementById(`unbookingUsername${i}`).value = "";
     document.getElementById(`unbookingPassword${i}`).value = "";
   }
+  console.log("clearing booking fields")
 }
 
 function renderCourts() {

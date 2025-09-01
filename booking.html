@@ -88,11 +88,11 @@
     renderCourts();
   </script> -->
     <script>
-  window.addEventListener("storage", function (event) {
-    if (event.key === "courtsData") {
-      location.reload();
-    }
-  });
+window.addEventListener("storage", function (event) {
+  if (event.key === "courtsData") {
+    loadCourtData(); 
+  }
+});
   </script>
   <script src="script.js"></script>
 <script>
@@ -110,9 +110,9 @@ async function checkForUpdates() {
     const res = await fetch('/api/court-status');
     const data = await res.json();
 
-    if (lastStatus && JSON.stringify(data) !== JSON.stringify(lastStatus)) {
-      location.reload();
-    }
+if (lastStatus && JSON.stringify(data) !== JSON.stringify(lastStatus)) {
+  loadCourtData(); 
+}
 
     lastStatus = data;  
 
