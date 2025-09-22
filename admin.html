@@ -243,28 +243,28 @@ function updateToggleButton() {
   }
 
   const isUnavailable = courtsData[court] === "unavailable";
-  toggleBtn.textContent = isUnavailable ? `Enable ${court}` : `Disable ${court}`;
   toggleBtn.disabled = false;
 }
 
-toggleBtn.addEventListener("click", () => {
+toggleBtn.addEventListener("click", async () => {
   const court = courtSelect.value;
   if (!court) return;
 
   const newStatus = courtsData[court] === "unavailable" ? "available" : "unavailable";
 
-  fetch("/api/court-status", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ court, status: newStatus }),
-  })
-    .then(res => res.json())
-    .then(() => {
-      location.reload(); 
-    })
-    .catch(err => console.error("Failed to update court status:", err));
-});
+  try {
+    await fetch("/api/court-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ court, status: newStatus }),
+    });
 
+    location.reload();
+
+  } catch (err) {
+    console.error("Failed to update court status:", err);
+  }
+});
 courtSelect.addEventListener("change", updateToggleButton);
 
 fetchCourts();

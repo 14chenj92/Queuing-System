@@ -365,6 +365,23 @@ app.get("/users", (req, res) => {
   });
 });
 
+app.get("/users/signed-in", (req, res) => {
+  const sql = `
+    SELECT username, firstName, lastName, email, signInDate
+    FROM users
+    WHERE isSignedIn = 1
+    ORDER BY signInDate DESC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch signed-in users" });
+    }
+    res.json(results);
+  });
+});
+
+
 app.put("/users/:username", (req, res) => {
   const { username } = req.params;
   const {
@@ -614,7 +631,7 @@ app.get("/api/court-status", (req, res) => {
 
     const statusMap = {};
     rows.forEach((row) => {
-      statusMap[row.name] = row.available;
+      statusMap[row.name] = row.available; // "available" or "unavailable"
     });
 
     res.json(statusMap);
@@ -622,20 +639,26 @@ app.get("/api/court-status", (req, res) => {
 });
 
 
+
 app.post("/api/court-status", (req, res) => {
   const { court, status } = req.body;
+
   if (!court || !["available", "unavailable"].includes(status)) {
     return res.status(400).json({ error: "Invalid court or status" });
   }
 
-  db.query("UPDATE courts SET available = ? WHERE name = ?", [status, court], (err, results) => {
-    if (err) {
-      console.error("Failed to update court status:", err);
-      return res.status(500).json({ error: "Failed to update court status" });
-    }
+  db.query(
+    "UPDATE courts SET available = ? WHERE name = ?",
+    [status, court],
+    (err, results) => {
+      if (err) {
+        console.error("Failed to update court status:", err);
+        return res.status(500).json({ error: "Failed to update court status" });
+      }
 
-    res.json({ court, status });
-  });
+      res.json({ court, status });
+    }
+  );
 });
 
 

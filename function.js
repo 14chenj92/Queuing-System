@@ -107,13 +107,40 @@ document.addEventListener("DOMContentLoaded", () => {
   emailInput.addEventListener("input", filterUsersByEmail);
 });
 
-window.displaySignedInUserDetailsByEmail = function () {
-  const selectedEmail = document.getElementById("signedInSelect").value;
+async function populateSignedInSelect() {
+  const select = document.getElementById("signedInSelect");
+
+  const res = await fetch("/users");
+  const users = await res.json();
+
+  const signedInUsers = users.filter(user => user.isSignedIn === 1);
+
+  signedInUsers.sort((a, b) => new Date(b.signInDate) - new Date(a.signInDate));
+
+  select.innerHTML = '<option value="">Select a User</option>';
+
+  signedInUsers.forEach(user => {
+    const option = document.createElement("option");
+    option.value = user.email.toLowerCase(); 
+    option.textContent = user.email;
+    select.appendChild(option);
+  });
+}
+
+
+window.displaySignedInUserDetailsByEmail = async function () {
+  const select = document.getElementById("signedInSelect");
+  const selectedEmail = select.value;
+
+  await populateSignedInSelect();
+
   if (selectedEmail) {
+    select.value = selectedEmail;
     displayUserDetails(selectedEmail);
     document.getElementById("signedInDropdown").style.display = "none";
   }
 };
+
 
 function displayUserDetails(email) {
   const user = users[email.toLowerCase()];
@@ -310,6 +337,7 @@ function displayUserDetails(email) {
   document.getElementById("userStats").innerHTML = statsHtml;
   document.getElementById("signedInDropdown").innerHTML = signedInDropdown;
   document.getElementById("signedInDropdown").style.display = "block";
+  populateSignedInSelect()
 }
 
 function displaySignedInUserDetailsByEmail() {
@@ -860,13 +888,12 @@ async function loadCourtData() {
     const statusRes = await fetch("/api/court-status");
     const statusData = await statusRes.json();
 
-    if (currentVersion === null) {
+    if (currentVersion === null || courtData.version !== currentVersion) {
       currentVersion = courtData.version;
       courts = courtData.courts;
 
       for (const courtName in courts) {
         const court = courts[courtName];
-        court.isUnavailable = statusData[courtName] === "unavailable";
 
         const now = Date.now();
 
@@ -886,12 +913,8 @@ async function loadCourtData() {
 
           await saveCourtData(courtName);
         }
+        }
       }
-
-      renderAndStart();
-    } else if (courtData.version !== currentVersion) {
-  currentVersion = courtData.version;
-  courts = courtData.courts;
 
   for (const courtName in courts) {
     const court = courts[courtName];
@@ -899,11 +922,11 @@ async function loadCourtData() {
   }
 
   renderAndStart();
-}
   } catch (err) {
     console.error("Error fetching court data:", err);
   }
 }
+
 
 function renderAndStart() {
   renderCourts();
