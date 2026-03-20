@@ -579,7 +579,7 @@ const initialCourts = [
   "Beijing",
   "Toronto",
   "New York",
-  "Rest Area",
+  "Las Vegas",
 ];
 
 function seedCourtsTable() {
@@ -607,7 +607,7 @@ let courts = {
   Beijing: { timeLeft: 1800, currentPlayers: [], queue: [] },
   Toronto: { timeLeft: 1800, currentPlayers: [], queue: [] },
   "New York": { timeLeft: 1800, currentPlayers: [], queue: [] },
-  "Rest Area": { timeLeft: 1800, currentPlayers: [], queue: [] },
+  "Las Vegas": { timeLeft: 1800, currentPlayers: [], queue: [] },
 };
 
 let courtsData = {
