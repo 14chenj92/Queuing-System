@@ -679,9 +679,16 @@ async function bookCourt() {
       return;
     }
 
-    if (courts[court].queue.length < 3) {
-      courts[court].queue.push(enteredFullNames);
-      courts[court].queueUsernames.push(enteredUsernames);
+    const queue = courts[court].queue;
+    const queueUsernames = courts[court].queueUsernames;
+    const lastSlot = queue.length > 0 ? queue[queue.length - 1] : null;
+
+    if (lastSlot && lastSlot.length === 2 && enteredUsernames.length === 2) {
+      queue[queue.length - 1] = [...lastSlot, ...enteredFullNames];
+      queueUsernames[queueUsernames.length - 1] = [...queueUsernames[queueUsernames.length - 1], ...enteredUsernames];
+    } else if (queue.length < 3) {
+      queue.push(enteredFullNames);
+      queueUsernames.push(enteredUsernames);
     } else {
       Swal.fire({
         icon: "error",
@@ -822,15 +829,21 @@ async function unbookCourt() {
 
     for (let i = queueUsernames.length - 1; i >= 0; i--) {
       const usernames = queueUsernames[i];
-      const hasAnyToRemove = usernames.some((username) =>
+      const toRemove = usernames.filter((username) =>
         enteredUsernames.includes(username)
       );
-      if (hasAnyToRemove) {
-        queueUsernames.splice(i, 1);
-        queue.splice(i, 1);
-        unbookedUsernames.push(
-          ...usernames.filter((username) => enteredUsernames.includes(username))
-        );
+      if (toRemove.length > 0) {
+        unbookedUsernames.push(...toRemove);
+        const remaining = usernames.filter((u) => !enteredUsernames.includes(u));
+        if (remaining.length === 0) {
+          queueUsernames.splice(i, 1);
+          queue.splice(i, 1);
+        } else {
+          queueUsernames[i] = remaining;
+          queue[i] = court.queue[i].filter(
+            (_, idx) => !enteredUsernames.includes(usernames[idx])
+          );
+        }
       }
     }
   }
@@ -1042,7 +1055,7 @@ function renderCourts() {
       ? "Unavailable"
       : details.currentPlayers.length === 0
       ? "Open"
-      : "In Progress";
+      : "Closed";
 
     courtDisplay += `<p class="status">${statusText}</p>`;
 

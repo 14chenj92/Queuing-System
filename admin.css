@@ -3,9 +3,9 @@
 }
 
 input[type="text"], [type="password"] {
-width: 300px !important;
-font-size: 23px !important;
-  }
+    width: 300px !important;
+    font-size: 21px !important;
+}
 
 #message, #logoutBtn {
     margin-top: 30px;
@@ -33,4 +33,18 @@ font-size: 23px !important;
 
 #editAdminBtn, #deleteAdminBtn {
     background-color: #fff;
+}
+
+/* Court toggle section */
+.court-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 16px 24px;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }

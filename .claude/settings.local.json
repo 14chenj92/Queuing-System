@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /c/Users/Jon/Queuing-System/*.js /c/Users/Jon/Queuing-System/middleware/*.js)",
+      "Bash(grep -n \"TODO\\\\|FIXME\\\\|BUG\\\\|HACK\\\\|XXX\" /c/Users/Jon/Queuing-System/*.js)",
+      "Bash(grep -n \"innerHTML\" /c/Users/Jon/Queuing-System/*.js)",
+      "Bash(grep -rn \"password\" /c/Users/Jon/Queuing-System/*.html)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
