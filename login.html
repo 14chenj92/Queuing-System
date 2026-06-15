@@ -3,128 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Badminton Court Booking System</title>
+  <title>Login — 21BC</title>
   <link rel="stylesheet" href="reset.css" />
   <link rel="stylesheet" href="main.css" />
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .login-box {
+      gap: 12px;
+      min-width: 420px;
+      padding: 52px 56px;
+      margin-top: 60px;
+    }
+
+    .login-heading {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 0 0 4px 0;
+      letter-spacing: -0.02em;
+    }
+
+    .login-subheading {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin: 0 0 20px 0;
+      font-weight: 400;
+    }
+
+    .login-field {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+      gap: 6px;
+    }
+
+    .login-field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .login-field input {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .login-divider {
+      width: 100%;
+      height: 1px;
+      background: #e2e8f0;
+      margin: 8px 0;
+    }
+  </style>
 </head>
 <body>
-  <button onclick="goToHome()" class="back-button">⬅ Back </button>
+  <button onclick="goToHome()" class="back-button">⬅ Back</button>
   <div class="login-box">
-    <h2>Login</h2>
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required />
-    <br /><br />
+    <p class="login-heading">Login</p>
+    <p class="login-subheading">Enter your email to sign in for today</p>
+    <div class="login-divider"></div>
+    <div class="login-field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="you@example.com" required />
+    </div>
     <button id="login-check" class="cta" onclick="login()">
-        <span>Login</span>
-        <svg width="15px" height="10px" viewBox="0 0 13 10">
-            <path d="M1,5 L11,5"></path>
-            <polyline points="8 1 12 5 8 9"></polyline>
-          </svg>
+      <span>Login</span>
+      <svg width="15px" height="10px" viewBox="0 0 13 10">
+        <path d="M1,5 L11,5"></path>
+        <polyline points="8 1 12 5 8 9"></polyline>
+      </svg>
     </button>
   </div>
+
   <script src="function.js"></script>
   <script src="script.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
   <script>
-async function login() {
-    const email = document.getElementById("email").value;
+    async function login() {
+      const email = document.getElementById("email").value;
 
-    if (!email) {
+      if (!email) {
         Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Please enter a valid email address.'
+          icon: 'error',
+          title: 'Error',
+          text: 'Please enter a valid email address.'
         });
         return;
-    }
+      }
 
-    let response = await fetch("/login", {
+      let response = await fetch("/login", {
         method: "POST",
-        body: JSON.stringify({ email }), 
-        headers: {
-            "Content-Type": "application/json" 
-        }
-    });
+        body: JSON.stringify({ email }),
+        headers: { "Content-Type": "application/json" }
+      });
 
-    let result = await response.json();
+      let result = await response.json();
 
-    if (result.status === "approved") {
+      if (result.status === "approved") {
         Swal.fire({
-            icon: 'success',
-            title: 'Login Approved',
-            html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
+          icon: 'success',
+          title: 'Login Approved',
+          html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
         }).then(() => {
-            window.location.href = "main.html";
+          window.location.href = "main.html";
         });
 
-    } else if (result.status === "pending") {
-        // Declare globally to access inside interval
+      } else if (result.status === "pending") {
         let intervalId;
 
-        // Show pending popup
         Swal.fire({
-            icon: 'info',
-            title: 'Pending Approval',
-            text: 'Your login request is pending approval by the admin.',
-            allowOutsideClick: false, 
-            showCancelButton: false, 
-            showConfirmButton: false 
+          icon: 'info',
+          title: 'Pending Approval',
+          text: 'Your login request is pending approval by the admin.',
+          allowOutsideClick: false,
+          showCancelButton: false,
+          showConfirmButton: false
         });
 
-        // Start polling for approval or denial
         intervalId = setInterval(async () => {
-            let response = await fetch("/check-status", { 
-                method: "POST", 
-                body: JSON.stringify({ email }), 
-                headers: { "Content-Type": "application/json" } 
+          let response = await fetch("/check-status", {
+            method: "POST",
+            body: JSON.stringify({ email }),
+            headers: { "Content-Type": "application/json" }
+          });
+
+          let result = await response.json();
+
+          if (result.status === "approved") {
+            clearInterval(intervalId);
+            Swal.close();
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Login Approved',
+              html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
+            }).then(() => {
+              window.location.href = "main.html";
             });
 
-            let result = await response.json();
+          } else if (result.status === "denied") {
+            clearInterval(intervalId);
+            Swal.close();
 
-            if (result.status === "approved") {
-                clearInterval(intervalId);
-                Swal.close(); // Close the pending popup
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Login Approved',
-                    html: `Your password for today is <strong style="color: green; font-size: 32px;">${result.password}</strong>`,
-                }).then(() => {
-                    window.location.href = "main.html";
-                });
-
-            } else if (result.status === "denied") {
-                clearInterval(intervalId);
-                Swal.close(); // Close the pending popup
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Login Denied',
-                    text: 'Your login request was denied by the admin. Please see the front desk.',
-                }).then(() => {
-                    window.location.href = "login.html";
-                });
-            }
+            Swal.fire({
+              icon: 'error',
+              title: 'Login Denied',
+              text: 'Your login request was denied by the admin. Please see the front desk.',
+            }).then(() => {
+              window.location.href = "login.html";
+            });
+          }
         }, 3000);
 
-    } else if (result.status === "denied") {
+      } else if (result.status === "denied") {
         Swal.fire({
-            icon: 'error',
-            title: 'Login Denied',
-            text: 'Your login request was denied by the admin. Please see the front desk.',
+          icon: 'error',
+          title: 'Login Denied',
+          text: 'Your login request was denied by the admin. Please see the front desk.',
         }).then(() => {
-            window.location.href = "login.html";
+          window.location.href = "login.html";
         });
 
-    } else {
+      } else {
         Swal.fire({
-            icon: 'error',
-            title: 'Login Failed',
-            text: 'Email not found. Please register first.'
+          icon: 'error',
+          title: 'Login Failed',
+          text: 'Email not found. Please register first.'
         });
+      }
     }
-}
 
     function goToHome() {
       window.location.href = "main.html";

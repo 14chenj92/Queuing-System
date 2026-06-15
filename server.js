@@ -54,11 +54,6 @@ app.use(
 app.use(express.json());
 app.use(express.static("public"));
 
-app.use(session({
-  secret: "your_secret_key",
-  resave: false,
-  saveUninitialized: false,
-}));
 
 app.use("/admin", adminRoutes);
 

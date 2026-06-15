@@ -115,7 +115,7 @@ async function populateSignedInSelect() {
 
   const signedInUsers = users.filter(user => user.isSignedIn === 1);
 
-  signedInUsers.sort((a, b) => new Date(b.signInDate) - new Date(a.signInDate));
+  signedInUsers.sort((a, b) => new Date(a.signInDate) - new Date(b.signInDate));
 
   select.innerHTML = '<option value="">Select a User</option>';
 
@@ -302,6 +302,7 @@ function displayUserDetails(email) {
   const signedInTodayUsers = Object.values(users).filter((u) => {
     const signInDate = new Date(u.signInDate);
     return (
+      u.isSignedIn === 1 &&
       signInDate.getFullYear() === today.getFullYear() &&
       signInDate.getMonth() === today.getMonth() &&
       signInDate.getDate() === today.getDate()
@@ -1055,7 +1056,7 @@ function renderCourts() {
       ? "Unavailable"
       : details.currentPlayers.length === 0
       ? "Open"
-      : "Closed";
+      : "In Progress";
 
     courtDisplay += `<p class="status">${statusText}</p>`;
 

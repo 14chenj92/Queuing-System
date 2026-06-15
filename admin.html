@@ -3,92 +3,99 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manage Users</title>
+    <title>Admin Dashboard</title>
     <link rel="stylesheet" href="reset.css" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="admin-dashboard.css" />
   </head>
   <body>
-    <!-- <h1>Admin Login Requests</h1>
-    <div id="pendingLogins"></div> -->
-    <h2 id="registeredUsersHeading">All Registered Users</h2>
-    <div class="admin-drop">
-    <label for="adminActions">Admin Actions:</label>
-<select id="adminActions">
-  <option value="">-- Select an action --</option>
-  <option value="resetSignIn">Reset Sign In</option>
-</select>
-<button id="confirmResetBtn" style="display: none;">Reset Sign In</button>
-</div>
-                <h3>Manage Users</h3>
-              <div class="userSearch">
-<input type="text" id="emailSearch" placeholder="Search by email..." oninput="filterUsersByEmail()" autocomplete="off" />
-<ul id="emailSuggestions" class="suggestions"></ul>
-</div>
-    <div id="userList"></div>
-    <div class="userInfo">
-      <div class="userLeft">
-        <div id="userDetails"> </div>
 
-        <div id="signedInDropdown"></div>
-        <div id="signedInUserDetails"></div>
+    <!-- Sticky Header -->
+    <header class="admin-header">
+      <div class="admin-header-left">
+        <h1>Admin Dashboard</h1>
+        <span class="admin-subtitle" id="registeredUsersHeading"></span>
       </div>
-      <div id="userStats"></div>
-    </div>
-    <h2>Court Status</h2>
-    <label for="courtSelection">Select Court to Remove Players:</label>
-    <select id="courtSelection">
-      <option value="Paris">Paris</option>
-      <option value="London">London</option>
-      <option value="Berlin">Berlin</option>
-      <option value="Tokyo">Tokyo</option>
-      <option value="New Delhi">New Delhi</option>
-      <option value="Jakarta">Jakarta</option>
-      <option value="Beijing">Beijing</option>
-      <option value="Toronto">Toronto</option>
-      <option value="New York">New York</option>
-      <option value="Las Vegas">Las Vegas</option>
-    </select>
-    <h2>Toggle Court Availability</h2>
-    <div class="court-toggle-container">
-      <label for="courtToggleSelect">Select Court:</label>
-      <select id="courtToggleSelect">
-        <option value="">-- Choose a court --</option>
-        <option value="Paris">Paris</option>
-        <option value="London">London</option>
-        <option value="Berlin">Berlin</option>
-        <option value="Tokyo">Tokyo</option>
-        <option value="New Delhi">New Delhi</option>
-        <option value="Jakarta">Jakarta</option>
-        <option value="Beijing">Beijing</option>
-        <option value="Toronto">Toronto</option>
-        <option value="New York">New York</option>
-        <option value="Las Vegas">Las Vegas</option>
-      </select>
-      <button id="toggleCourtBtn" disabled>Toggle Availability</button>
-    </div>    
-    <div id="courtStatus" class="court-container"></div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <select id="adminActions" style="width: auto; margin: 0; font-size: 14px; padding: 8px 12px;">
+          <option value="">-- Admin Actions --</option>
+          <option value="resetSignIn">Reset Sign In</option>
+        </select>
+        <button class="admin-reset-btn" id="confirmResetBtn" style="display: none;">Reset Sign In</button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+
+      <!-- User Management Section -->
+      <section class="admin-section">
+        <div class="section-header-row">
+          <h2 class="section-title">Manage Users</h2>
+        </div>
+        <div class="user-management-top">
+          <input type="text" id="emailSearch" placeholder="Search by email..." oninput="filterUsersByEmail()" autocomplete="off" />
+          <ul id="emailSuggestions" class="suggestions"></ul>
+        </div>
+        <div id="userList"></div>
+        <div class="userInfo">
+          <div class="userLeft">
+            <div id="userDetails"></div>
+            <div id="signedInDropdown"></div>
+            <div id="signedInUserDetails"></div>
+          </div>
+          <div id="userStats"></div>
+        </div>
+      </section>
+
+      <!-- Court Status Section -->
+      <section class="admin-section">
+        <div class="section-header-row">
+          <h2 class="section-title">Court Status</h2>
+          <div class="court-toggle-inline">
+            <label for="courtToggleSelect">Toggle Court:</label>
+            <select id="courtToggleSelect">
+              <option value="">-- Choose a court --</option>
+              <option value="Paris">Paris</option>
+              <option value="London">London</option>
+              <option value="Berlin">Berlin</option>
+              <option value="Tokyo">Tokyo</option>
+              <option value="New Delhi">New Delhi</option>
+              <option value="Jakarta">Jakarta</option>
+              <option value="Beijing">Beijing</option>
+              <option value="Toronto">Toronto</option>
+              <option value="New York">New York</option>
+              <option value="Las Vegas">Las Vegas</option>
+            </select>
+            <button id="toggleCourtBtn" disabled>Toggle Availability</button>
+          </div>
+        </div>
+        <div id="courtStatus" class="court-container"></div>
+      </section>
+
+    </main>
+
     <script src="function.js"></script>
     <script src="script.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.8.0/dist/sweetalert2.all.min.js"></script>
     <script src="profile-upload.js"></script>
+
     <script>
       let isDialogOpen = false;
       const handledUsers = new Set();
-    
+
       const interval = setInterval(async () => {
         if (isDialogOpen) return;
-    
+
         try {
           const response = await fetch("/admin/pending");
           const pendingLogins = await response.json();
-    
+
           if (pendingLogins.length > 0) {
             const login = pendingLogins[0];
             if (handledUsers.has(login.username)) return;
-    
+
             isDialogOpen = true;
-    
+
             const result = await Swal.fire({
               title: `New login request from ${login.username}`,
               text: `Do you want to approve or deny this login request?`,
@@ -97,13 +104,13 @@
               confirmButtonText: "Approve",
               cancelButtonText: "Deny",
             });
-    
+
             if (result.isConfirmed) {
               await approveLogin(login.username);
             } else if (result.dismiss === Swal.DismissReason.cancel) {
               await denyLogin(login.username);
             }
-    
+
             handledUsers.add(login.username);
             isDialogOpen = false;
           }
@@ -112,18 +119,18 @@
           isDialogOpen = false;
         }
       }, 4000);
-    
+
       window.addEventListener("beforeunload", () => clearInterval(interval));
-    
+
       async function approveLogin(username) {
         const response = await fetch("/admin/approve", {
           method: "POST",
           body: JSON.stringify({ username }),
           headers: { "Content-Type": "application/json" },
         });
-    
+
         const result = await response.json();
-    
+
         if (result.status === "approved") {
           Swal.fire("Approved!", "The user login has been approved.", "success");
           setTimeout(() => {
@@ -131,67 +138,40 @@
           }, 4000);
         }
       }
-    
+
       async function denyLogin(username) {
         const response = await fetch("/admin/deny", {
           method: "POST",
           body: JSON.stringify({ username }),
           headers: { "Content-Type": "application/json" },
         });
-    
+
         const result = await response.json();
-    
+
         if (result.status === "denied") {
           Swal.fire("Denied!", "The user login has been denied.", "error");
         }
       }
     </script>
-    
+
     <script>
       showUsers();
       renderCourts();
     </script>
+
     <script>
       const now = new Date();
-      const formattedDateTime = now.toLocaleString(); // Format based on user locale
-    
-      document.getElementById("registeredUsersHeading").textContent = 
-        `All Registered Users as of ${formattedDateTime}`;
+      document.getElementById("registeredUsersHeading").textContent =
+        `All Registered Users as of ${now.toLocaleString()}`;
     </script>
+
     <script>
-      async function resetAllUsers() {
-        try {
-          const response = await fetch('/admin/reset-signedin', {
-            method: 'POST'
-          });
-    
-          const result = await response.json();
-    
-          if (response.ok) {
-            alert(result.message);
-            location.reload();
-          } else {
-            alert('Failed to reset users.');
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Something went wrong.');
-        }
-      }
-    </script>
-    <script>
-      const adminActionsDropdown = document.getElementById("adminActions");
-      const confirmResetBtn = document.getElementById("confirmResetBtn");
-    
-      adminActionsDropdown.addEventListener("change", function () {
-        if (this.value === "resetSignIn") {
-          confirmResetBtn.style.display = "inline-block";
-        } else {
-          confirmResetBtn.style.display = "none";
-        }
+      document.getElementById("adminActions").addEventListener("change", function () {
+        const btn = document.getElementById("confirmResetBtn");
+        btn.style.display = this.value === "resetSignIn" ? "inline-block" : "none";
       });
-    
-      confirmResetBtn.addEventListener("click", async function () {
+
+      document.getElementById("confirmResetBtn").addEventListener("click", async function () {
         const confirmation = await Swal.fire({
           title: "Are you sure?",
           text: "This will reset all signed-in users.",
@@ -200,15 +180,12 @@
           confirmButtonText: "Yes, reset it!",
           cancelButtonText: "Cancel",
         });
-    
+
         if (confirmation.isConfirmed) {
           try {
-            const response = await fetch("/admin/reset-signedin", {
-              method: "POST",
-            });
-    
+            const response = await fetch("/admin/reset-signedin", { method: "POST" });
             const result = await response.json();
-    
+
             if (response.ok) {
               Swal.fire("Reset!", result.message, "success").then(() => {
                 location.reload();
@@ -222,54 +199,52 @@
           }
         }
       });
-    </script> 
-<script>
-const courtSelect = document.getElementById("courtToggleSelect");
-const toggleBtn = document.getElementById("toggleCourtBtn");
+    </script>
 
-let courtsData = {};
+    <script>
+      const courtSelect = document.getElementById("courtToggleSelect");
+      const toggleBtn = document.getElementById("toggleCourtBtn");
 
-async function fetchCourts() {
-  const res = await fetch("/api/court-status"); 
-  courtsData = await res.json();
-  updateToggleButton();
-  renderCourts();
-}
+      let courtsData = {};
 
-function updateToggleButton() {
-  const court = courtSelect.value;
-  if (!court) {
-    toggleBtn.disabled = true;
-    toggleBtn.textContent = "Toggle";
-    return;
-  }
+      async function fetchCourts() {
+        const res = await fetch("/api/court-status");
+        courtsData = await res.json();
+        updateToggleButton();
+        renderCourts();
+      }
 
-  const isUnavailable = courtsData[court] === "unavailable";
-  toggleBtn.disabled = false;
-}
+      function updateToggleButton() {
+        const court = courtSelect.value;
+        if (!court) {
+          toggleBtn.disabled = true;
+          toggleBtn.textContent = "Toggle Availability";
+          return;
+        }
+        toggleBtn.disabled = false;
+      }
 
-toggleBtn.addEventListener("click", async () => {
-  const court = courtSelect.value;
-  if (!court) return;
+      toggleBtn.addEventListener("click", async () => {
+        const court = courtSelect.value;
+        if (!court) return;
 
-  const newStatus = courtsData[court] === "unavailable" ? "available" : "unavailable";
+        const newStatus = courtsData[court] === "unavailable" ? "available" : "unavailable";
 
-  try {
-    await fetch("/api/court-status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ court, status: newStatus }),
-    });
+        try {
+          await fetch("/api/court-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ court, status: newStatus }),
+          });
+          location.reload();
+        } catch (err) {
+          console.error("Failed to update court status:", err);
+        }
+      });
 
-    location.reload();
+      courtSelect.addEventListener("change", updateToggleButton);
+      fetchCourts();
+    </script>
 
-  } catch (err) {
-    console.error("Failed to update court status:", err);
-  }
-});
-courtSelect.addEventListener("change", updateToggleButton);
-
-fetchCourts();
-</script>
   </body>
 </html>

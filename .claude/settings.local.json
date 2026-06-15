@@ -5,7 +5,28 @@
       "Bash(grep -n \"TODO\\\\|FIXME\\\\|BUG\\\\|HACK\\\\|XXX\" /c/Users/Jon/Queuing-System/*.js)",
       "Bash(grep -n \"innerHTML\" /c/Users/Jon/Queuing-System/*.js)",
       "Bash(grep -rn \"password\" /c/Users/Jon/Queuing-System/*.html)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(curl -s -X POST http://localhost:3001/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"nonexistent@gmail.com\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"09.chen@gmail.com\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"narutofox64@gmail.com\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/users/validate -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"09.chen@gmail.com\\\\\",\\\\\"password\\\\\":\\\\\"flick\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/users/validate -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"09.chen@gmail.com\\\\\",\\\\\"password\\\\\":\\\\\"wrongpassword\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/update-courts -H \"Content-Type: application/json\" -d \"{\\\\\"updatedCourts\\\\\":{\\\\\"Paris\\\\\":{\\\\\"timeLeft\\\\\":1720000000000,\\\\\"currentPlayers\\\\\":[\\\\\"Jonathan Chen\\\\\"],\\\\\"currentUsernames\\\\\":[\\\\\"09.chen@gmail.com\\\\\"],\\\\\"queue\\\\\":[],\\\\\"queueUsernames\\\\\":[]}},\\\\\"version\\\\\":0}\")",
+      "Bash(curl -s -X POST http://localhost:3001/update-courts -H \"Content-Type: application/json\" -d \"{\\\\\"updatedCourts\\\\\":{\\\\\"Paris\\\\\":{\\\\\"timeLeft\\\\\":1800,\\\\\"currentPlayers\\\\\":[],\\\\\"currentUsernames\\\\\":[],\\\\\"queue\\\\\":[],\\\\\"queueUsernames\\\\\":[]}},\\\\\"version\\\\\":1}\")",
+      "Bash(curl -s -X POST http://localhost:3001/admin/reset-signedin -H \"Content-Type: application/json\")",
+      "Bash(curl -s http://localhost:3001/admin/pending)",
+      "Bash(curl -s http://localhost:3001/server.js)",
+      "Bash(curl -s http://localhost:3001/api/court-status)",
+      "Bash(curl -s http://localhost:3001/.env)",
+      "Bash(curl -s -X POST http://localhost:3001/check-status -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"narutofox64@gmail.com\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/update-courts -H \"Content-Type: application/json\" -d \"{\\\\\"updatedCourts\\\\\":{\\\\\"London\\\\\":{\\\\\"timeLeft\\\\\":1720000000000,\\\\\"currentPlayers\\\\\":[\\\\\"Test Player\\\\\"],\\\\\"currentUsernames\\\\\":[\\\\\"test@test.com\\\\\"],\\\\\"queue\\\\\":[],\\\\\"queueUsernames\\\\\":[]}},\\\\\"version\\\\\":0}\")",
+      "Bash(curl -s -X POST http://localhost:3001/check-status -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/register -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"09.chen@gmail.com\\\\\",\\\\\"password\\\\\":\\\\\"test\\\\\",\\\\\"firstName\\\\\":\\\\\"Test\\\\\",\\\\\"lastName\\\\\":\\\\\"User\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/users/validate -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"narutofox64@gmail.com\\\\\",\\\\\"password\\\\\":\\\\\"test\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/users/validate -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"narutofox64@gmail.com\\\\\",\\\\\"password\\\\\":\\\\\"\\\\\"}\")",
+      "Bash(curl -s http://localhost:3001/users/signed-in)",
+      "Bash(Test-Path \"c:\\\\Users\\\\09che\\\\Queuing-System\\\\admin.css\")",
+      "Bash(git checkout *)"
     ]
   }
 }

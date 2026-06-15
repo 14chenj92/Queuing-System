@@ -1,0 +1,139 @@
+/* Admin dashboard layout overrides */
+body {
+  display: block;
+  overflow: auto;
+  height: auto;
+  min-height: 100vh;
+  background-color: #f4f4f0;
+  text-align: left;
+}
+
+/* Sticky header */
+.admin-header {
+  position: sticky;
+  top: 0;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 14px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.admin-header-left h1 {
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.admin-subtitle {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  display: block;
+  margin-top: 2px;
+}
+
+.admin-reset-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: var(--main-font);
+  transition: background 0.2s;
+  width: auto;
+  height: auto;
+}
+
+.admin-reset-btn:hover {
+  background: #dc2626;
+  color: #fff;
+  box-shadow: none;
+}
+
+/* Main content area */
+.admin-main {
+  padding: 32px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Sections */
+.admin-section {
+  margin-bottom: 52px;
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* User management top row */
+.user-management-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.user-management-top input {
+  width: 300px;
+  font-size: 15px;
+  margin: 0;
+}
+
+/* Adjust userInfo spacing */
+.userInfo {
+  gap: 32px;
+  align-items: flex-start;
+  margin-top: 24px;
+}
+
+#userDetails,
+#userStats,
+#signedInUserDetails {
+  height: auto;
+  min-height: 100px;
+}
+
+/* Court toggle inline with section header */
+.court-toggle-inline {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.court-toggle-inline select {
+  width: auto;
+  padding: 8px 12px;
+  font-size: 14px;
+  margin: 0;
+}
+
+.court-toggle-inline button {
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+

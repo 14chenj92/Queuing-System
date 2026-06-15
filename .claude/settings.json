@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node server.js)",
+      "Bash(curl -s http://localhost:3001/ -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s http://localhost:3001/courts)",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const j=JSON.parse\\(d\\); console.log\\('version:', j.version\\); console.log\\('courts:', Object.keys\\(j.courts\\).length, 'courts'\\); console.log\\('sample:', JSON.stringify\\(j.courts['Paris']\\)\\)\")",
+      "Bash(curl -s http://localhost:3001/users)"
+    ]
+  }
+}
