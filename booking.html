@@ -48,6 +48,30 @@
     .player-area input::placeholder { color: #6b7280; }
     .player-area select { color: #111; }
     .player-area button { width: 36%; display: block; margin: 10px auto 0; }
+    .email-wrap { position: relative; display: inline-block; }
+    .email-suggest {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 100;
+      background: #fff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      list-style: none;
+      margin: 2px 0 0;
+      padding: 4px 0;
+      min-width: 185px;
+      display: none;
+    }
+    .email-suggest li {
+      padding: 7px 12px;
+      font-size: 13px;
+      color: #111;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .email-suggest li:hover { background: #f0f4f8; }
   </style>
   <!-- <h2>Badminton Court Booking</h2> -->
   <label>Select Court:</label>
@@ -67,22 +91,22 @@
   <h3>Add Players to Court</h3>
   <div>
     <label>Player 1:</label>
-    <input type="text" id="bookingUsername1" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="bookingUsername1" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-bookingUsername1"></ul></div>
     <input type="password" id="bookingPassword1" placeholder="Password" />
   </div>
   <div>
     <label>Player 2:</label>
-    <input type="text" id="bookingUsername2" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="bookingUsername2" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-bookingUsername2"></ul></div>
     <input type="password" id="bookingPassword2" placeholder="Password" />
   </div>
   <div>
     <label>Player 3:</label>
-    <input type="text" id="bookingUsername3" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="bookingUsername3" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-bookingUsername3"></ul></div>
     <input type="password" id="bookingPassword3" placeholder="Password" />
   </div>
   <div>
     <label>Player 4:</label>
-    <input type="text" id="bookingUsername4" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="bookingUsername4" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-bookingUsername4"></ul></div>
     <input type="password" id="bookingPassword4" placeholder="Password" />
   </div>
 
@@ -93,25 +117,25 @@
 
   <div>
     <label for="unbookingUsername1">Player 1:</label>
-    <input type="text" id="unbookingUsername1" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="unbookingUsername1" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-unbookingUsername1"></ul></div>
     <input type="password" id="unbookingPassword1" placeholder="Password" />
   </div>
-  
+
   <div>
     <label for="unbookingUsername2">Player 2:</label>
-    <input type="text" id="unbookingUsername2" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="unbookingUsername2" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-unbookingUsername2"></ul></div>
     <input type="password" id="unbookingPassword2" placeholder="Password" />
   </div>
-  
+
   <div>
     <label for="unbookingUsername3">Player 3:</label>
-    <input type="text" id="unbookingUsername3" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="unbookingUsername3" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-unbookingUsername3"></ul></div>
     <input type="password" id="unbookingPassword3" placeholder="Password" />
   </div>
-  
+
   <div>
     <label for="unbookingUsername4">Player 4:</label>
-    <input type="text" id="unbookingUsername4" placeholder="Email" />
+    <div class="email-wrap"><input type="email" id="unbookingUsername4" placeholder="Email" autocomplete="new-password" /><ul class="email-suggest" id="sug-unbookingUsername4"></ul></div>
     <input type="password" id="unbookingPassword4" placeholder="Password" />
   </div>
   
@@ -119,6 +143,53 @@
 </div>
 </div>
   <script src="function.js"></script>
+  <script>
+    let signedInEmails = [];
+
+    async function populateEmailSuggestions() {
+      try {
+        const res = await fetch('/users/signed-in');
+        const users = await res.json();
+        signedInEmails = users.map(u => u.email.toLowerCase());
+      } catch (e) {}
+    }
+
+    const emailInputIds = [
+      'bookingUsername1','bookingUsername2','bookingUsername3','bookingUsername4',
+      'unbookingUsername1','unbookingUsername2','unbookingUsername3','unbookingUsername4'
+    ];
+
+    function setupSuggest(inputId) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById('sug-' + inputId);
+
+      input.addEventListener('input', () => {
+        const val = input.value.toLowerCase();
+        list.innerHTML = '';
+        if (!val) { list.style.display = 'none'; return; }
+        const matches = signedInEmails.filter(e => e.startsWith(val));
+        if (!matches.length) { list.style.display = 'none'; return; }
+        matches.forEach(email => {
+          const li = document.createElement('li');
+          li.textContent = email;
+          li.addEventListener('mousedown', () => {
+            input.value = email;
+            list.style.display = 'none';
+          });
+          list.appendChild(li);
+        });
+        list.style.display = 'block';
+      });
+
+      input.addEventListener('blur', () => {
+        setTimeout(() => { list.style.display = 'none'; }, 150);
+      });
+    }
+
+    emailInputIds.forEach(setupSuggest);
+    populateEmailSuggestions();
+    setInterval(populateEmailSuggestions, 5000);
+  </script>
   <!-- <script>
     renderCourts();
   </script> -->
