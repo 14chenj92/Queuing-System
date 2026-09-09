@@ -210,6 +210,27 @@ function displayUserDetails(email) {
       currentPic.style.display = "block";
     });
 
+  function compressImage(file, maxWidth = 900, quality = 0.82) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round(height * maxWidth / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        canvas.toBlob(resolve, "image/jpeg", quality);
+      };
+      img.src = url;
+    });
+  }
+
   document
     .getElementById("uploadPicBtn")
     .addEventListener("click", async () => {
@@ -221,8 +242,9 @@ function displayUserDetails(email) {
         return;
       }
 
+      const compressed = await compressImage(file);
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("image", compressed, "photo.jpg");
       formData.append("email", email);
 
       try {
