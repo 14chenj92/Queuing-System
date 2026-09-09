@@ -249,29 +249,34 @@ const upload = multer({
   },
 });
 
-app.post("/api/upload-profile-pic", upload.single("image"), (req, res) => {
-  if (!req.file || !req.body.email) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing file or email." });
-  }
-
-  const email = req.body.email;
-  const safeEmail = email.replace(/[^a-zA-Z0-9.@_-]/g, "");
-  const newFilename = `${safeEmail}.jpg`;
-
-  const oldPath = req.file.path;
-  const newPath = path.join(uploadDir, newFilename);
-
-  fs.rename(oldPath, newPath, (err) => {
+app.post("/api/upload-profile-pic", (req, res) => {
+  upload.single("image")(req, res, (err) => {
     if (err) {
-      console.error("Error renaming file:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "File rename failed." });
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ success: false, message: "File too large. Max size is 2MB." });
+      }
+      return res.status(400).json({ success: false, message: "Invalid file. JPEG or PNG only." });
     }
 
-    return res.json({ success: true, message: "Image uploaded successfully." });
+    if (!req.file || !req.body.email) {
+      return res.status(400).json({ success: false, message: "Missing file or email." });
+    }
+
+    const email = req.body.email;
+    const safeEmail = email.replace(/[^a-zA-Z0-9.@_-]/g, "");
+    const newFilename = `${safeEmail}.jpg`;
+
+    const oldPath = req.file.path;
+    const newPath = path.join(uploadDir, newFilename);
+
+    fs.rename(oldPath, newPath, (err) => {
+      if (err) {
+        console.error("Error renaming file:", err);
+        return res.status(500).json({ success: false, message: "File rename failed." });
+      }
+
+      return res.json({ success: true, message: "Image uploaded successfully." });
+    });
   });
 });
 
